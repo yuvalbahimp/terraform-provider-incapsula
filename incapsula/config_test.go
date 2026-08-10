@@ -84,6 +84,17 @@ func TestMissingBaseURLAPI(t *testing.T) {
 	}
 }
 
+func TestMissingBaseURLAiFirewall(t *testing.T) {
+	config := Config{APIID: "foo", APIKey: "bar", BaseURL: "foobar.com", BaseURLRev2: "foobar.com", BaseURLRev3: "foobar.com", BaseURLAPI: "foobar.com", BaseURLAiFirewall: ""}
+	client, err := config.Client()
+	if err == nil {
+		t.Errorf("Should have received an error, got a client: %q", client)
+	}
+	if err.Error() != missingBaseURLAiFirewallMessage {
+		t.Errorf("Should have received missing Base URL AI Firewall message, got: %s", err)
+	}
+}
+
 func TestInvalidCredentials(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.String() != "/account/verify" {
@@ -93,7 +104,7 @@ func TestInvalidCredentials(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := Config{APIID: "bad", APIKey: "bad", BaseURL: server.URL, BaseURLRev2: server.URL, BaseURLRev3: server.URL, BaseURLAPI: server.URL}
+	config := Config{APIID: "bad", APIKey: "bad", BaseURL: server.URL, BaseURLRev2: server.URL, BaseURLRev3: server.URL, BaseURLAPI: server.URL, BaseURLAiFirewall: server.URL}
 	client, err := config.Client()
 	if err == nil {
 		t.Errorf("Should have received an error, got a client: %q", client)
@@ -112,7 +123,7 @@ func TestValidCredentials(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := Config{APIID: "good", APIKey: "good", BaseURL: server.URL, BaseURLRev2: server.URL, BaseURLRev3: server.URL, BaseURLAPI: server.URL}
+	config := Config{APIID: "good", APIKey: "good", BaseURL: server.URL, BaseURLRev2: server.URL, BaseURLRev3: server.URL, BaseURLAPI: server.URL, BaseURLAiFirewall: server.URL}
 	client, err := config.Client()
 	if err != nil {
 		t.Errorf("Should not have received an error, got: %s", err)

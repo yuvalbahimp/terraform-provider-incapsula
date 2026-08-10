@@ -1,3 +1,9 @@
+## 3.40.0 (Unreleased)
+
+FEATURES:
+* **New Resource:** `incapsula_ai_firewall_application`
+
+
 ## 3.39.0 (Jul 22, 2026)
 
 FEATURES:

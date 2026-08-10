@@ -217,3 +217,8 @@ const DeleteApiClient = "delete_api_client"
 const CreateCloudOriginDomain = "create_cloud_origin_domain"
 const ReadCloudOriginDomain = "read_cloud_origin_domain"
 const DeleteCloudOriginDomain = "delete_cloud_origin_domain"
+
+const CreateAiFirewallApplication = "create_ai_firewall_application"
+const ReadAiFirewallApplication = "read_ai_firewall_application"
+const UpdateAiFirewallApplication = "update_ai_firewall_application"
+const DeleteAiFirewallApplication = "delete_ai_firewall_application"

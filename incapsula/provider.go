@@ -8,6 +8,7 @@ var baseURL string
 var baseURLRev2 string
 var baseURLRev3 string
 var baseURLAPI string
+var baseURLAiFirewall string
 var descriptions map[string]string
 
 func init() {
@@ -15,6 +16,7 @@ func init() {
 	baseURLRev2 = "https://my.imperva.com/api/prov/v2"
 	baseURLRev3 = "https://my.imperva.com/api/prov/v3"
 	baseURLAPI = "https://api.imperva.com"
+	baseURLAiFirewall = "https://api.imperva.com/ai-application-security"
 
 	descriptions = map[string]string{
 		"api_id": "The API identifier for API operations. You can retrieve this\n" +
@@ -32,17 +34,20 @@ func init() {
 		"base_url_rev_3": "The base URL (revision 3) for API operations. Used for provider development.",
 
 		"base_url_api": "The base URL (same as v2 but with different subdomain) for API operations. Used for provider development.",
+
+		"base_url_ai_firewall": "The base URL for AI Firewall API operations. Used for provider development.",
 	}
 }
 
 func providerConfigure(d *schema.ResourceData, terraformVersion string) (interface{}, error) {
 	config := Config{
-		APIID:       d.Get("api_id").(string),
-		APIKey:      d.Get("api_key").(string),
-		BaseURL:     d.Get("base_url").(string),
-		BaseURLRev2: d.Get("base_url_rev_2").(string),
-		BaseURLRev3: d.Get("base_url_rev_3").(string),
-		BaseURLAPI:  d.Get("base_url_api").(string),
+		APIID:             d.Get("api_id").(string),
+		APIKey:            d.Get("api_key").(string),
+		BaseURL:           d.Get("base_url").(string),
+		BaseURLRev2:       d.Get("base_url_rev_2").(string),
+		BaseURLRev3:       d.Get("base_url_rev_3").(string),
+		BaseURLAPI:        d.Get("base_url_api").(string),
+		BaseURLAiFirewall: d.Get("base_url_ai_firewall").(string),
 	}
 
 	return config.Client()
@@ -87,6 +92,12 @@ func Provider() *schema.Provider {
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("INCAPSULA_BASE_URL_API", baseURLAPI),
 				Description: descriptions["base_url_api"],
+			},
+			"base_url_ai_firewall": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("INCAPSULA_BASE_URL_AI_FIREWALL", baseURLAiFirewall),
+				Description: descriptions["base_url_ai_firewall"],
 			},
 		},
 
@@ -157,6 +168,7 @@ func Provider() *schema.Provider {
 			"incapsula_site_cache_configuration":                               resourceSiteCacheConfiguration(),
 			"incapsula_short_renewal_cycle":                                    resourceShortRenewalCycle(),
 			"incapsula_api_client":                                             resourceApiClient(),
+			"incapsula_ai_firewall_application":                                resourceAiFirewallApplication(),
 		},
 	}
 

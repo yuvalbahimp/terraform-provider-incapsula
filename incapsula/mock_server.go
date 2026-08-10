@@ -37,9 +37,13 @@ type MockImpervaServer struct {
 	// CSP domain storage: map[siteID]map[domain]*MockCSPDomain
 	cspDomains map[int]map[string]*MockCSPDomain
 
+	// AI Firewall application storage: map[applicationId]*MockAiFirewallApplication
+	aiFirewallApplications map[string]*MockAiFirewallApplication
+
 	// ID generators
-	nextAccountID int
-	nextSiteID    int
+	nextAccountID       int
+	nextSiteID          int
+	nextAiFirewallAppID int
 }
 
 // MockAccount represents an account in the mock server
@@ -107,11 +111,13 @@ type MockCSPStatus struct {
 // NewMockImpervaServer creates a new mock server instance
 func NewMockImpervaServer() *MockImpervaServer {
 	mock := &MockImpervaServer{
-		accounts:      make(map[int]*MockAccount),
-		sites:         make(map[int]*MockSite),
-		cspDomains:    make(map[int]map[string]*MockCSPDomain),
-		nextAccountID: 1000,
-		nextSiteID:    10000,
+		accounts:               make(map[int]*MockAccount),
+		sites:                  make(map[int]*MockSite),
+		cspDomains:             make(map[int]map[string]*MockCSPDomain),
+		aiFirewallApplications: make(map[string]*MockAiFirewallApplication),
+		nextAccountID:          1000,
+		nextSiteID:             10000,
+		nextAiFirewallAppID:    1,
 	}
 
 	// Create the HTTP server with the router
@@ -172,6 +178,10 @@ func (m *MockImpervaServer) router(w http.ResponseWriter, r *http.Request) {
 	// CSP API endpoints
 	case strings.HasPrefix(path, "csp-api/v1/sites/"):
 		m.handleCSPAPI(w, r, path)
+
+	// AI Firewall application endpoints (/v3/api/applications)
+	case path == "v3/api/applications" || strings.HasPrefix(path, "v3/api/applications/"):
+		m.handleAiFirewallApplications(w, r, path)
 
 	default:
 		// Return 404 for unimplemented endpoints
