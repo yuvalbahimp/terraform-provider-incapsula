@@ -58,7 +58,7 @@ resource "incapsula_ai_firewall_application" "edge_app" {
     path                       = "/v1/chat/completions"
     content_type               = "application/json"
     prompt_location            = "$.messages[-1].content"
-    blocked_response_structure = "{\"error\": \"blocked\"}"
+    blocked_response_structure = "{\"error\": \"$BLOCKED_MESSAGE\"}"
     is_streaming               = true
 
     request {
@@ -91,7 +91,7 @@ The following arguments are supported:
   * `path` - (Optional) Request path to inspect.
   * `content_type` - (Optional) Content type of the inspected traffic. Default: `application/json`.
   * `prompt_location` - (Optional) Location of the prompt within the request payload.
-  * `blocked_response_structure` - (Optional) Response body returned when a request is blocked.
+  * `blocked_response_structure` - (Optional) Response body returned when a request is blocked. Must contain the `$BLOCKED_MESSAGE` placeholder, which the service substitutes with the block reason at runtime.
   * `is_streaming` - (Optional) Whether the application uses streaming responses. Default: `false`.
   * `request` - (Optional) Single block describing how to extract fields from streaming requests:
     * `message_path` - (Optional) Path to the messages array.
