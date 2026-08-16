@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-const aiFirewallApplicationEndpoint = "/v3/api/applications"
+const aiFirewallApplicationEndpoint = "/ai-application-security/v3/api/applications"
 
 // AiFirewallImpervaApiBody wraps every AI Firewall write payload / response body
 // (backend ImpervaApiBody<T> envelope, AIFW-1321). Shared by the policy and api-key resources.
@@ -81,9 +81,9 @@ func aiFirewallWrapData(payload interface{}) ([]byte, error) {
 }
 
 // CreateAiFirewallApplication creates a new AI Firewall application.
-// POST /v3/api/applications?caid={accountID}
+// POST /ai-application-security/v3/api/applications?caid={accountID}
 func (c *Client) CreateAiFirewallApplication(accountID int, req *AiFirewallApplicationRequest) (*AiFirewallApplicationDetails, error) {
-	reqURL := fmt.Sprintf("%s%s", c.config.BaseURLAiFirewall, aiFirewallApplicationEndpoint)
+	reqURL := fmt.Sprintf("%s%s", c.config.BaseURLAPI, aiFirewallApplicationEndpoint)
 	params := GetRequestParamsWithCaid(accountID)
 
 	body, err := aiFirewallWrapData(req)
@@ -117,10 +117,10 @@ func (c *Client) CreateAiFirewallApplication(accountID int, req *AiFirewallAppli
 }
 
 // GetAiFirewallApplication reads an AI Firewall application by ID.
-// GET /v3/api/applications?caid={accountID}&applicationId={applicationID}
+// GET /ai-application-security/v3/api/applications?caid={accountID}&applicationId={applicationID}
 // Returns (nil, nil) if the application does not exist.
 func (c *Client) GetAiFirewallApplication(accountID int, applicationID string) (*AiFirewallApplicationDetails, error) {
-	reqURL := fmt.Sprintf("%s%s", c.config.BaseURLAiFirewall, aiFirewallApplicationEndpoint)
+	reqURL := fmt.Sprintf("%s%s", c.config.BaseURLAPI, aiFirewallApplicationEndpoint)
 	params := GetRequestParamsWithCaid(accountID)
 	params["applicationId"] = applicationID
 
@@ -158,9 +158,9 @@ func (c *Client) GetAiFirewallApplication(accountID int, applicationID string) (
 }
 
 // UpdateAiFirewallApplication partially updates an AI Firewall application.
-// PATCH /v3/api/applications/{applicationID}?caid={accountID}
+// PATCH /ai-application-security/v3/api/applications/{applicationID}?caid={accountID}
 func (c *Client) UpdateAiFirewallApplication(accountID int, applicationID string, req *AiFirewallApplicationRequest) (*AiFirewallApplicationDetails, error) {
-	reqURL := fmt.Sprintf("%s%s/%s", c.config.BaseURLAiFirewall, aiFirewallApplicationEndpoint, applicationID)
+	reqURL := fmt.Sprintf("%s%s/%s", c.config.BaseURLAPI, aiFirewallApplicationEndpoint, applicationID)
 	params := GetRequestParamsWithCaid(accountID)
 
 	body, err := aiFirewallWrapData(req)
@@ -194,9 +194,9 @@ func (c *Client) UpdateAiFirewallApplication(accountID int, applicationID string
 }
 
 // DeleteAiFirewallApplication deletes an AI Firewall application.
-// DELETE /v3/api/applications/{applicationID}?caid={accountID}
+// DELETE /ai-application-security/v3/api/applications/{applicationID}?caid={accountID}
 func (c *Client) DeleteAiFirewallApplication(accountID int, applicationID string) error {
-	reqURL := fmt.Sprintf("%s%s/%s", c.config.BaseURLAiFirewall, aiFirewallApplicationEndpoint, applicationID)
+	reqURL := fmt.Sprintf("%s%s/%s", c.config.BaseURLAPI, aiFirewallApplicationEndpoint, applicationID)
 	params := GetRequestParamsWithCaid(accountID)
 
 	log.Printf("[DEBUG] Delete AI Firewall application URL: %s, params: %s", reqURL, params)

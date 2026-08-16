@@ -13,14 +13,12 @@ type MockEnvironment struct {
 	originalBaseURLRev2       string
 	originalBaseURLRev3       string
 	originalBaseURLAPI        string
-	originalBaseURLAiFirewall string
 	wasAPIIDSet               bool
 	wasAPIKeySet              bool
 	wasBaseURLSet             bool
 	wasBaseURLRev2Set         bool
 	wasBaseURLRev3Set         bool
 	wasBaseURLAPISet          bool
-	wasBaseURLAiFirewallSet   bool
 }
 
 // SetupMockEnvironment configures environment variables to point to the mock server
@@ -35,7 +33,6 @@ func SetupMockEnvironment(mockURL string) *MockEnvironment {
 	env.originalBaseURLRev2, env.wasBaseURLRev2Set = os.LookupEnv("INCAPSULA_BASE_URL_REV_2")
 	env.originalBaseURLRev3, env.wasBaseURLRev3Set = os.LookupEnv("INCAPSULA_BASE_URL_REV_3")
 	env.originalBaseURLAPI, env.wasBaseURLAPISet = os.LookupEnv("INCAPSULA_BASE_URL_API")
-	env.originalBaseURLAiFirewall, env.wasBaseURLAiFirewallSet = os.LookupEnv("INCAPSULA_BASE_URL_AI_FIREWALL")
 
 	// Set mock values
 	os.Setenv("INCAPSULA_API_ID", "mock-api-id")
@@ -44,7 +41,6 @@ func SetupMockEnvironment(mockURL string) *MockEnvironment {
 	os.Setenv("INCAPSULA_BASE_URL_REV_2", mockURL)
 	os.Setenv("INCAPSULA_BASE_URL_REV_3", mockURL)
 	os.Setenv("INCAPSULA_BASE_URL_API", mockURL)
-	os.Setenv("INCAPSULA_BASE_URL_AI_FIREWALL", mockURL)
 
 	return env
 }
@@ -85,12 +81,6 @@ func (e *MockEnvironment) Restore() {
 		os.Setenv("INCAPSULA_BASE_URL_API", e.originalBaseURLAPI)
 	} else {
 		os.Unsetenv("INCAPSULA_BASE_URL_API")
-	}
-
-	if e.wasBaseURLAiFirewallSet {
-		os.Setenv("INCAPSULA_BASE_URL_AI_FIREWALL", e.originalBaseURLAiFirewall)
-	} else {
-		os.Unsetenv("INCAPSULA_BASE_URL_AI_FIREWALL")
 	}
 }
 

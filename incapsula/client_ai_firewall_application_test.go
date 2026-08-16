@@ -9,7 +9,7 @@ import (
 )
 
 func TestAiFirewallApplicationBadConnection(t *testing.T) {
-	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAiFirewall: "badness.incapsula.com"}
+	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: "badness.incapsula.com"}
 	client := &Client{config: config, httpClient: &http.Client{Timeout: 1}}
 
 	_, err := client.CreateAiFirewallApplication(55, &AiFirewallApplicationRequest{Name: "app"})
@@ -65,7 +65,7 @@ func TestAiFirewallApplicationCreate(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAiFirewall: server.URL}
+	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
 	resp, err := client.CreateAiFirewallApplication(accountID, &AiFirewallApplicationRequest{Name: "my-app", ApplicationType: "API"})
@@ -97,7 +97,7 @@ func TestAiFirewallApplicationRead(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAiFirewall: server.URL}
+	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
 	resp, err := client.GetAiFirewallApplication(accountID, applicationID)
@@ -119,7 +119,7 @@ func TestAiFirewallApplicationReadEmptyList(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAiFirewall: server.URL}
+	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
 	resp, err := client.GetAiFirewallApplication(55, "does-not-exist")
@@ -141,7 +141,7 @@ func TestAiFirewallApplicationReadNotFound(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAiFirewall: server.URL}
+	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
 	resp, err := client.GetAiFirewallApplication(55, "does-not-exist")
@@ -179,7 +179,7 @@ func TestAiFirewallApplicationUpdate(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAiFirewall: server.URL}
+	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
 	resp, err := client.UpdateAiFirewallApplication(accountID, applicationID, &AiFirewallApplicationRequest{Name: "renamed-app", Region: "EU"})
@@ -210,7 +210,7 @@ func TestAiFirewallApplicationDelete(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAiFirewall: server.URL}
+	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
 	err := client.DeleteAiFirewallApplication(accountID, applicationID)
@@ -229,7 +229,7 @@ func TestAiFirewallApplicationErrorResponse(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAiFirewall: server.URL}
+	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
 	_, err := client.CreateAiFirewallApplication(55, &AiFirewallApplicationRequest{Name: "app"})
