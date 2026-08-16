@@ -227,3 +227,7 @@ const CreateAiFirewallPolicy = "create_ai_firewall_policy"
 const ReadAiFirewallPolicy = "read_ai_firewall_policy"
 const UpdateAiFirewallPolicy = "update_ai_firewall_policy"
 const DeleteAiFirewallPolicy = "delete_ai_firewall_policy"
+
+const CreateAiFirewallApiKey = "create_ai_firewall_api_key"
+const ReadAiFirewallApiKey = "read_ai_firewall_api_key"
+const DeleteAiFirewallApiKey = "delete_ai_firewall_api_key"

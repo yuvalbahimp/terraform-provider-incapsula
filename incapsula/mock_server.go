@@ -43,11 +43,15 @@ type MockImpervaServer struct {
 	// AI Firewall policy storage: map[policyId]*MockAiFirewallPolicy
 	aiFirewallPolicies map[string]*MockAiFirewallPolicy
 
+	// AI Firewall API key storage: map[apiKeyId]*MockAiFirewallApiKey
+	aiFirewallApiKeys map[int64]*MockAiFirewallApiKey
+
 	// ID generators
 	nextAccountID          int
 	nextSiteID             int
 	nextAiFirewallAppID    int
 	nextAiFirewallPolicyID int
+	nextAiFirewallApiKeyID int64
 }
 
 // MockAccount represents an account in the mock server
@@ -120,10 +124,12 @@ func NewMockImpervaServer() *MockImpervaServer {
 		cspDomains:             make(map[int]map[string]*MockCSPDomain),
 		aiFirewallApplications: make(map[string]*MockAiFirewallApplication),
 		aiFirewallPolicies:     make(map[string]*MockAiFirewallPolicy),
+		aiFirewallApiKeys:      make(map[int64]*MockAiFirewallApiKey),
 		nextAccountID:          1000,
 		nextSiteID:             10000,
 		nextAiFirewallAppID:    1,
 		nextAiFirewallPolicyID: 1,
+		nextAiFirewallApiKeyID: 1,
 	}
 
 	// Create the HTTP server with the router
@@ -195,6 +201,11 @@ func (m *MockImpervaServer) router(w http.ResponseWriter, r *http.Request) {
 	// prefix the client prepends to the mock base URL.
 	case strings.Contains(path, "v3/applications/") && strings.Contains(path, "/policies"):
 		m.handleAiFirewallPolicies(w, r, path)
+
+	// AI Firewall API key endpoints: account-level list (v3/api-keys) and the
+	// application-scoped create/delete paths (v3/applications/{id}/api-keys[/{id}]).
+	case path == "v3/api-keys" || (strings.Contains(path, "v3/applications/") && strings.Contains(path, "/api-keys")):
+		m.handleAiFirewallApiKeys(w, r, path)
 
 	// AI Firewall application endpoints (/v3/api/applications)
 	case path == "v3/api/applications" || strings.HasPrefix(path, "v3/api/applications/"):

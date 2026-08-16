@@ -3,6 +3,7 @@
 FEATURES:
 * **New Resource:** `incapsula_ai_firewall_application`
 * **New Resource:** `incapsula_ai_firewall_policy`
+* **New Resource:** `incapsula_ai_firewall_api_key`
 
 
 ## 3.39.0 (Jul 22, 2026)
