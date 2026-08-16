@@ -40,10 +40,14 @@ type MockImpervaServer struct {
 	// AI Firewall application storage: map[applicationId]*MockAiFirewallApplication
 	aiFirewallApplications map[string]*MockAiFirewallApplication
 
+	// AI Firewall policy storage: map[policyId]*MockAiFirewallPolicy
+	aiFirewallPolicies map[string]*MockAiFirewallPolicy
+
 	// ID generators
-	nextAccountID       int
-	nextSiteID          int
-	nextAiFirewallAppID int
+	nextAccountID          int
+	nextSiteID             int
+	nextAiFirewallAppID    int
+	nextAiFirewallPolicyID int
 }
 
 // MockAccount represents an account in the mock server
@@ -115,9 +119,11 @@ func NewMockImpervaServer() *MockImpervaServer {
 		sites:                  make(map[int]*MockSite),
 		cspDomains:             make(map[int]map[string]*MockCSPDomain),
 		aiFirewallApplications: make(map[string]*MockAiFirewallApplication),
+		aiFirewallPolicies:     make(map[string]*MockAiFirewallPolicy),
 		nextAccountID:          1000,
 		nextSiteID:             10000,
 		nextAiFirewallAppID:    1,
+		nextAiFirewallPolicyID: 1,
 	}
 
 	// Create the HTTP server with the router
@@ -147,6 +153,11 @@ func (m *MockImpervaServer) router(w http.ResponseWriter, r *http.Request) {
 
 	// Remove leading slash for matching
 	path = strings.TrimPrefix(path, "/")
+
+	// AI Firewall endpoints are served under the /ai-application-security base path
+	// that the client prepends to BaseURLAPI; strip it so the matching below is
+	// prefix-agnostic (the bare mock base URL carries no such segment for other APIs).
+	path = strings.TrimPrefix(path, "ai-application-security/")
 
 	// Account endpoints
 	switch {
@@ -178,6 +189,12 @@ func (m *MockImpervaServer) router(w http.ResponseWriter, r *http.Request) {
 	// CSP API endpoints
 	case strings.HasPrefix(path, "csp-api/v1/sites/"):
 		m.handleCSPAPI(w, r, path)
+
+	// AI Firewall policy endpoints (/v3/applications/{applicationId}/policies[/{policyId}]).
+	// Matched before the application endpoints and tolerant of the "/ai-application-security"
+	// prefix the client prepends to the mock base URL.
+	case strings.Contains(path, "v3/applications/") && strings.Contains(path, "/policies"):
+		m.handleAiFirewallPolicies(w, r, path)
 
 	// AI Firewall application endpoints (/v3/api/applications)
 	case path == "v3/api/applications" || strings.HasPrefix(path, "v3/api/applications/"):

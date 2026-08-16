@@ -222,3 +222,8 @@ const CreateAiFirewallApplication = "create_ai_firewall_application"
 const ReadAiFirewallApplication = "read_ai_firewall_application"
 const UpdateAiFirewallApplication = "update_ai_firewall_application"
 const DeleteAiFirewallApplication = "delete_ai_firewall_application"
+
+const CreateAiFirewallPolicy = "create_ai_firewall_policy"
+const ReadAiFirewallPolicy = "read_ai_firewall_policy"
+const UpdateAiFirewallPolicy = "update_ai_firewall_policy"
+const DeleteAiFirewallPolicy = "delete_ai_firewall_policy"

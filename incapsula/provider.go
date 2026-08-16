@@ -158,6 +158,7 @@ func Provider() *schema.Provider {
 			"incapsula_short_renewal_cycle":                                    resourceShortRenewalCycle(),
 			"incapsula_api_client":                                             resourceApiClient(),
 			"incapsula_ai_firewall_application":                                resourceAiFirewallApplication(),
+			"incapsula_ai_firewall_policy":                                     resourceAiFirewallPolicy(),
 		},
 	}
 
