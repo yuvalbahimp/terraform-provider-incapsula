@@ -37,12 +37,12 @@ func init() {
 
 func providerConfigure(d *schema.ResourceData, terraformVersion string) (interface{}, error) {
 	config := Config{
-		APIID:             d.Get("api_id").(string),
-		APIKey:            d.Get("api_key").(string),
-		BaseURL:           d.Get("base_url").(string),
-		BaseURLRev2:       d.Get("base_url_rev_2").(string),
-		BaseURLRev3:       d.Get("base_url_rev_3").(string),
-		BaseURLAPI:        d.Get("base_url_api").(string),
+		APIID:       d.Get("api_id").(string),
+		APIKey:      d.Get("api_key").(string),
+		BaseURL:     d.Get("base_url").(string),
+		BaseURLRev2: d.Get("base_url_rev_2").(string),
+		BaseURLRev3: d.Get("base_url_rev_3").(string),
+		BaseURLAPI:  d.Get("base_url_api").(string),
 	}
 
 	return config.Client()

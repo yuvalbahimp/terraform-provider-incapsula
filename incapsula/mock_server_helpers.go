@@ -7,18 +7,18 @@ import (
 
 // MockEnvironment holds the original environment variables for restoration
 type MockEnvironment struct {
-	originalAPIID             string
-	originalAPIKey            string
-	originalBaseURL           string
-	originalBaseURLRev2       string
-	originalBaseURLRev3       string
-	originalBaseURLAPI        string
-	wasAPIIDSet               bool
-	wasAPIKeySet              bool
-	wasBaseURLSet             bool
-	wasBaseURLRev2Set         bool
-	wasBaseURLRev3Set         bool
-	wasBaseURLAPISet          bool
+	originalAPIID       string
+	originalAPIKey      string
+	originalBaseURL     string
+	originalBaseURLRev2 string
+	originalBaseURLRev3 string
+	originalBaseURLAPI  string
+	wasAPIIDSet         bool
+	wasAPIKeySet        bool
+	wasBaseURLSet       bool
+	wasBaseURLRev2Set   bool
+	wasBaseURLRev3Set   bool
+	wasBaseURLAPISet    bool
 }
 
 // SetupMockEnvironment configures environment variables to point to the mock server
