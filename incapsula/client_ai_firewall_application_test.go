@@ -9,6 +9,9 @@ import (
 )
 
 func TestAiFirewallApplicationBadConnection(t *testing.T) {
+	restore := withShortRetries()
+	defer restore()
+
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: "badness.incapsula.com"}
 	client := &Client{config: config, httpClient: &http.Client{Timeout: 1}}
 

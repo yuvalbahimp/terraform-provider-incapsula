@@ -57,9 +57,9 @@ resource "incapsula_ai_firewall_application" "edge_app" {
     site_id                    = 987654
     path                       = "/v1/chat/completions"
     content_type               = "application/json"
-    prompt_location            = "$.messages[-1].content"
-    blocked_response_structure = "{\"error\": \"$BLOCKED_MESSAGE\"}"
-    is_streaming               = true
+    prompt_location            = "$.body"
+    blocked_response_structure = jsonencode({ error = "$BLOCKED_MESSAGE" })
+    is_streaming               = false
 
     request {
       message_path = "$.messages"
@@ -68,15 +68,21 @@ resource "incapsula_ai_firewall_application" "edge_app" {
     }
 
     response {
-      role_path            = "$.choices[0].delta.role"
-      content_path         = "$.choices[0].delta.content"
-      finish_reason_path   = "$.choices[0].finish_reason"
-      finish_reason_value  = "stop"
+      role_path            = "$.choices.0.message.role"
+      content_path         = "$.choices.0.message.content"
+      finish_reason_path   = "$.choices.0.finish_reason"
+      finish_reason_value  = "$.stop"
       end_of_stream_marker = "[DONE]"
     }
   }
 }
 ```
+
+~> **JSONPath required.** Every path field in the `configuration` block
+(`prompt_location`, and the `request` / `response` `*_path` fields) must be a valid
+JSONPath expression starting with `$`. `blocked_response_structure` must contain the
+literal `$BLOCKED_MESSAGE` placeholder, which the service replaces with the block
+reason at runtime.
 
 ## Argument Reference
 
@@ -90,17 +96,17 @@ The following arguments are supported:
   * `site_id` - (Optional) Numeric identifier of the site the application is attached to.
   * `path` - (Optional) Request path to inspect.
   * `content_type` - (Optional) Content type of the inspected traffic. Default: `application/json`.
-  * `prompt_location` - (Optional) Location of the prompt within the request payload.
+  * `prompt_location` - (Optional) JSONPath to the prompt within the request payload (must start with `$`).
   * `blocked_response_structure` - (Optional) Response body returned when a request is blocked. Must contain the `$BLOCKED_MESSAGE` placeholder, which the service substitutes with the block reason at runtime.
   * `is_streaming` - (Optional) Whether the application uses streaming responses. Default: `false`.
-  * `request` - (Optional) Single block describing how to extract fields from streaming requests:
-    * `message_path` - (Optional) Path to the messages array.
-    * `content_path` - (Optional) Path to the message content.
-    * `role_path` - (Optional) Path to the message role.
-  * `response` - (Optional) Single block describing how to extract fields from streaming responses:
-    * `role_path` - (Optional) Path to the response role.
-    * `content_path` - (Optional) Path to the response content.
-    * `finish_reason_path` - (Optional) Path to the finish-reason field.
+  * `request` - (Optional) Single block describing how to extract fields from requests. All `*_path` values are JSONPath expressions starting with `$`:
+    * `message_path` - (Optional) JSONPath to the messages array.
+    * `content_path` - (Optional) JSONPath to the message content.
+    * `role_path` - (Optional) JSONPath to the message role.
+  * `response` - (Optional) Single block describing how to extract fields from responses. All `*_path` values are JSONPath expressions starting with `$`:
+    * `role_path` - (Optional) JSONPath to the response role.
+    * `content_path` - (Optional) JSONPath to the response content.
+    * `finish_reason_path` - (Optional) JSONPath to the finish-reason field.
     * `finish_reason_value` - (Optional) Value of the finish-reason field that marks completion.
     * `end_of_stream_marker` - (Optional) Marker that signals the end of the stream.
 
