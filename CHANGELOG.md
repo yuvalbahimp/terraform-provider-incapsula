@@ -5,6 +5,11 @@ FEATURES:
 * **New Resource:** `incapsula_ai_firewall_policy`
 * **New Resource:** `incapsula_ai_firewall_api_key`
 
+## 3.39.1 (Aug 11, 2026)
+
+BUT FIXES:
+- Rename field from originTlsPolicy to originSslProtocol for cloud origin resource ([#668](https://github.com/imperva/terraform-provider-incapsula/pull/668))
+
 
 ## 3.39.0 (Jul 22, 2026)
 
