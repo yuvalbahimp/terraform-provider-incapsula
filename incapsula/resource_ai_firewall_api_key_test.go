@@ -26,9 +26,8 @@ func TestAccIncapsulaAiFirewallApiKeyBasic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAiFirewallApiKeyExists(aiFirewallApiKeyResourceName),
 					resource.TestCheckResourceAttr(aiFirewallApiKeyResourceName, "name", "my-key"),
-					resource.TestCheckResourceAttrSet(aiFirewallApiKeyResourceName, "api_key_id"),
+					resource.TestCheckResourceAttrSet(aiFirewallApiKeyResourceName, "id"),
 					resource.TestCheckResourceAttrSet(aiFirewallApiKeyResourceName, "application_id"),
-					resource.TestCheckResourceAttrSet(aiFirewallApiKeyResourceName, "masked_api_key"),
 					// The plaintext key must be present after create.
 					resource.TestCheckResourceAttrSet(aiFirewallApiKeyResourceName, "api_key"),
 					resource.TestCheckResourceAttr(aiFirewallApiKeyResourceName, "active", "true"),
@@ -58,7 +57,7 @@ resource "incapsula_ai_firewall_application" "api_key_app" {
 
 resource "incapsula_ai_firewall_api_key" "test" {
   account_id     = %d
-  application_id = incapsula_ai_firewall_application.api_key_app.application_id
+  application_id = incapsula_ai_firewall_application.api_key_app.id
   name           = "%s"
 }
 `, aiFirewallTestAccountID(), aiFirewallTestAccountID(), name)

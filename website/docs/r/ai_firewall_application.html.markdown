@@ -88,7 +88,7 @@ reason at runtime.
 
 The following arguments are supported:
 
-* `account_id` - (Required) Numeric identifier of the account to operate on. Cannot be changed after the resource is created.
+* `account_id` - (Optional) Numeric identifier of the account to operate on. Defaults to the account of the API credentials when omitted. Cannot be changed after the resource is created.
 * `name` - (Required) Name of the AI Firewall application.
 * `application_type` - (Required) Deployment type of the application. One of `SDK`, `EDGE`, `API`. Cannot be changed after the resource is created.
 * `region` - (Optional) Data region of the application. One of `US`, `EU`, `AU`, `APAC`. If omitted, the application inherits the account's data region on create (the value is then stored as a computed attribute). Account-region inheritance is create-only: removing this attribute after it has been set does not revert to the account default - the last applied value is kept and the region is left unchanged. Set the attribute explicitly to move an application between regions.
@@ -114,15 +114,15 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The resource ID, equal to `application_id`.
-* `application_id` - UUID of the application. Used as the import key and as `application_id` on the AI Firewall policy and api-key resources.
-* `status` - Current status of the application. One of `CONFIGURED`, `ERROR`, `OPERATIONAL`.
-* `status_description` - Description of the current status.
+* `id` - UUID of the application. Used as the import key and as `application_id` on the AI Firewall policy and api-key resources.
 
 ## Import
 
-AI Firewall application can be imported using its `application_id`:
+AI Firewall application can be imported using its `application_id`, optionally prefixed with the `account_id`:
 
 ```
 $ terraform import incapsula_ai_firewall_application.example 3f2504e0-4f89-41d3-9a0c-0305e82c3301
+$ terraform import incapsula_ai_firewall_application.example 1234567/3f2504e0-4f89-41d3-9a0c-0305e82c3301
 ```
+
+When the `account_id` is omitted from the import ID it is taken from the account of the API credentials.

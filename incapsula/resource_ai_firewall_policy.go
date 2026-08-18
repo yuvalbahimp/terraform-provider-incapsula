@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -45,7 +46,7 @@ func resourceAiFirewallPolicy() *schema.Resource {
 		DeleteContext: resourceAiFirewallPolicyDelete,
 		CustomizeDiff: resourceAiFirewallPolicyCustomizeDiff,
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: resourceAiFirewallPolicyImport,
 		},
 
 		Description: "Manages an AI Firewall policy for an application. A policy holds an ordered " +
@@ -54,8 +55,9 @@ func resourceAiFirewallPolicy() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"account_id": {
 				Type:        schema.TypeInt,
-				Description: "The Imperva account ID that owns the application.",
-				Required:    true,
+				Description: "The Imperva account ID that owns the application. Defaults to the account of the API credentials when omitted.",
+				Optional:    true,
+				Computed:    true,
 				ForceNew:    true,
 			},
 			"application_id": {
@@ -115,23 +117,50 @@ func resourceAiFirewallPolicy() *schema.Resource {
 							Default:     true,
 						},
 						"config": {
-							Type:             schema.TypeString,
-							Description:      "Guardian-specific configuration as a JSON object. Defaults to an empty object.",
-							Optional:         true,
-							Default:          "{}",
-							ValidateFunc:     validation.StringIsJSON,
+							Type:         schema.TypeString,
+							Description:  "Guardian-specific configuration as a JSON object. Defaults to an empty object.",
+							Optional:     true,
+							Default:      "{}",
+							ValidateFunc: validation.StringIsJSON,
+							// guardian is a TypeSet, whose element hash is computed from the raw
+							// attribute values BEFORE DiffSuppressFunc runs — so a suppressor alone
+							// cannot prevent spurious add/remove diffs when the backend returns
+							// semantically-equal but reordered JSON. The set's Set hash function (see
+							// below) normalizes this config before hashing so both sides hash
+							// identically; DiffSuppressFunc then suppresses the intra-element string
+							// diff for the (now hash-matched) element.
 							DiffSuppressFunc: suppressEquivalentJSONStringDiffs,
 						},
 					},
 				},
-			},
-			"policy_id": {
-				Type:        schema.TypeString,
-				Description: "The UUID of the policy (same as the resource ID).",
-				Computed:    true,
+				// A guardian's config is JSON whose key order is not significant, but a TypeSet
+				// hashes the raw attribute values, so a config written with keys in one order
+				// would hash differently than the same config read back sorted (see
+				// flattenAiFirewallGuardian) — producing a perpetual remove/add diff. Hash the
+				// normalized config instead so semantically-equal guardians land in the same
+				// set element.
+				Set: aiFirewallGuardianHash,
 			},
 		},
 	}
+}
+
+// aiFirewallGuardianHash computes the set hash for a guardian element from its identifying
+// fields plus its normalized (canonical-JSON) config, so that guardians differing only in
+// config key order hash identically.
+func aiFirewallGuardianHash(v interface{}) int {
+	m := v.(map[string]interface{})
+	var b strings.Builder
+	b.WriteString(m["type"].(string))
+	b.WriteString("|")
+	b.WriteString(m["phase"].(string))
+	b.WriteString("|")
+	b.WriteString(m["mode"].(string))
+	b.WriteString("|")
+	b.WriteString(strconv.FormatBool(m["active"].(bool)))
+	b.WriteString("|")
+	b.WriteString(normalizeAiFirewallGuardianConfig(m["config"]))
+	return schema.HashString(b.String())
 }
 
 // resourceAiFirewallPolicyCustomizeDiff validates each guardian's type/phase combination
@@ -212,7 +241,6 @@ func resourceAiFirewallPolicyRead(ctx context.Context, d *schema.ResourceData, m
 	d.Set("name", policy.Name)
 	d.Set("description", policy.Description)
 	d.Set("active", policy.Active)
-	d.Set("policy_id", policy.Id)
 
 	guardians, err := flattenAiFirewallGuardians(policy)
 	if err != nil {
@@ -355,6 +383,27 @@ func flattenAiFirewallGuardians(policy *AiFirewallPolicyResponse) ([]interface{}
 	return all, nil
 }
 
+// normalizeAiFirewallGuardianConfig canonicalizes a guardian config JSON string (sorted keys,
+// no insignificant whitespace) so it matches flattenAiFirewallGuardian's json.Marshal output.
+// Because config lives inside a TypeSet, the stored value feeds the set-element hash; storing a
+// canonical form on both the config and refresh sides keeps the hashes stable. Invalid JSON is
+// returned unchanged so ValidateFunc surfaces the error instead of this masking it.
+func normalizeAiFirewallGuardianConfig(v interface{}) string {
+	s, ok := v.(string)
+	if !ok || strings.TrimSpace(s) == "" {
+		return "{}"
+	}
+	var parsed interface{}
+	if err := json.Unmarshal([]byte(s), &parsed); err != nil {
+		return s
+	}
+	canonical, err := json.Marshal(parsed)
+	if err != nil {
+		return s
+	}
+	return string(canonical)
+}
+
 func flattenAiFirewallGuardian(g AiFirewallGuardian, phaseFallback string) (map[string]interface{}, error) {
 	phase := g.GuardianPhase
 	if phase == "" {
@@ -383,4 +432,39 @@ func flattenAiFirewallGuardian(g AiFirewallGuardian, phaseFallback string) (map[
 		"active": g.Active,
 		"config": configStr,
 	}, nil
+}
+
+func resourceAiFirewallPolicyImport(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	raw := strings.TrimSpace(d.Id())
+	if raw == "" {
+		return nil, fmt.Errorf("expected import ID to be '<policy_id>' or '<account_id>/<policy_id>'")
+	}
+
+	var accountID string
+	resourceID := raw
+
+	if strings.Contains(raw, "/") {
+		parts := strings.SplitN(raw, "/", 2)
+		if len(parts) != 2 || strings.TrimSpace(parts[1]) == "" {
+			return nil, fmt.Errorf("invalid import ID %q: want '<policy_id>' or '<account_id>/<policy_id>'", raw)
+		}
+		accountID = strings.TrimSpace(parts[0])
+		resourceID = strings.TrimSpace(parts[1])
+	}
+
+	// Set the canonical Terraform ID to just the resource ID.
+	d.SetId(resourceID)
+
+	// Only set account_id if it was provided.
+	if accountID != "" {
+		caid, err := strconv.Atoi(accountID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid account_id %q: must be numeric", accountID)
+		}
+		if err := d.Set("account_id", caid); err != nil {
+			return nil, fmt.Errorf("setting account_id: %w", err)
+		}
+	}
+
+	return []*schema.ResourceData{d}, nil
 }

@@ -13,6 +13,7 @@ import (
 
 const aiFirewallApplicationApiResourceName = "incapsula_ai_firewall_application.api_test"
 const aiFirewallApplicationEdgeResourceName = "incapsula_ai_firewall_application.edge_test"
+const aiFirewallApplicationEdgePartialResourceName = "incapsula_ai_firewall_application.edge_partial"
 
 // aiFirewallTestAccountID is the account the acceptance tests operate on. It defaults
 // to 1234 (the mock server accepts any account), and is overridable via
@@ -56,8 +57,7 @@ func TestAccIncapsulaAiFirewallApplicationBasic(t *testing.T) {
 					resource.TestCheckResourceAttr(aiFirewallApplicationApiResourceName, "name", "my-app"),
 					resource.TestCheckResourceAttr(aiFirewallApplicationApiResourceName, "application_type", "API"),
 					resource.TestCheckResourceAttr(aiFirewallApplicationApiResourceName, "region", "US"),
-					resource.TestCheckResourceAttrSet(aiFirewallApplicationApiResourceName, "application_id"),
-					resource.TestCheckResourceAttrSet(aiFirewallApplicationApiResourceName, "status"),
+					resource.TestCheckResourceAttrSet(aiFirewallApplicationApiResourceName, "id"),
 					// API applications carry no configuration block.
 					resource.TestCheckResourceAttr(aiFirewallApplicationApiResourceName, "configuration.#", "0"),
 				),
@@ -121,6 +121,38 @@ func TestAccIncapsulaAiFirewallApplicationEdge(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateIdFunc: aiFirewallApplicationImportID(aiFirewallApplicationEdgeResourceName),
+			},
+		},
+	})
+}
+
+// TestAccIncapsulaAiFirewallApplicationEdgePartialConfig covers a configuration block that
+// declares a request{} sub-block but NO response{}. flattenAiFirewallApplicationConfig only
+// emits request/response when the backend returns them, so this guards against a phantom
+// empty response block (configuration.0.response.# must be 0) and, via ImportStateVerify,
+// against any expand/flatten asymmetry when one nested sub-block is absent.
+func TestAccIncapsulaAiFirewallApplicationEdgePartialConfig(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckAiFirewallApplicationDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAiFirewallApplicationEdgePartialConfig("edge-partial"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAiFirewallApplicationExists(aiFirewallApplicationEdgePartialResourceName),
+					resource.TestCheckResourceAttr(aiFirewallApplicationEdgePartialResourceName, "configuration.#", "1"),
+					resource.TestCheckResourceAttr(aiFirewallApplicationEdgePartialResourceName, "configuration.0.request.#", "1"),
+					resource.TestCheckResourceAttr(aiFirewallApplicationEdgePartialResourceName, "configuration.0.request.0.message_path", "$.messages"),
+					// No response{} was declared — flatten must not synthesize a phantom one.
+					resource.TestCheckResourceAttr(aiFirewallApplicationEdgePartialResourceName, "configuration.0.response.#", "0"),
+				),
+			},
+			{
+				ResourceName:      aiFirewallApplicationEdgePartialResourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateIdFunc: aiFirewallApplicationImportID(aiFirewallApplicationEdgePartialResourceName),
 			},
 		},
 	})
@@ -192,6 +224,32 @@ resource "incapsula_ai_firewall_application" "edge_test" {
   }
 }
 `, aiFirewallTestAccountID(), name, aiFirewallTestSiteID(), path)
+}
+
+// testAccAiFirewallApplicationEdgePartialConfig builds an EDGE configuration that contains a
+// request{} block but no response{} block.
+func testAccAiFirewallApplicationEdgePartialConfig(name string) string {
+	return fmt.Sprintf(`
+resource "incapsula_ai_firewall_application" "edge_partial" {
+  account_id       = %d
+  name             = "%s"
+  application_type = "EDGE"
+  region           = "US"
+
+  configuration {
+    site_id                    = %d
+    path                       = "/v1/chat/completions"
+    prompt_location            = "$.messages[-1].content"
+    blocked_response_structure = "{\"error\": \"$BLOCKED_MESSAGE\"}"
+
+    request {
+      message_path = "$.messages"
+      content_path = "$.content"
+      role_path    = "$.role"
+    }
+  }
+}
+`, aiFirewallTestAccountID(), name, aiFirewallTestSiteID())
 }
 
 func testAccAiFirewallApplicationEdgeMissingConfig(name string) string {

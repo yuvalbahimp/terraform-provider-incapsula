@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -17,15 +19,16 @@ func resourceAiFirewallApplication() *schema.Resource {
 		UpdateContext: resourceAiFirewallApplicationUpdate,
 		DeleteContext: resourceAiFirewallApplicationDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: resourceAiFirewallApplicationImport,
 		},
 		CustomizeDiff: resourceAiFirewallApplicationCustomizeDiff,
 		Schema: map[string]*schema.Schema{
 			"account_id": {
 				Type:        schema.TypeInt,
-				Required:    true,
+				Optional:    true,
+				Computed:    true,
 				ForceNew:    true,
-				Description: "Numeric identifier of the account to operate on.",
+				Description: "Numeric identifier of the account to operate on. Defaults to the account of the API credentials when omitted.",
 			},
 			"name": {
 				Type:        schema.TypeString,
@@ -137,21 +140,6 @@ func resourceAiFirewallApplication() *schema.Resource {
 						},
 					},
 				},
-			},
-			"application_id": {
-				Type:        schema.TypeString,
-				Computed:    true,
-				Description: "UUID of the application. Used as the import key and as application_id on the policy and api-key resources.",
-			},
-			"status": {
-				Type:        schema.TypeString,
-				Computed:    true,
-				Description: "Current status of the application: CONFIGURED, ERROR, or OPERATIONAL.",
-			},
-			"status_description": {
-				Type:        schema.TypeString,
-				Computed:    true,
-				Description: "Description of the current status.",
 			},
 		},
 	}
@@ -294,9 +282,6 @@ func resourceAiFirewallApplicationRead(ctx context.Context, d *schema.ResourceDa
 	d.Set("name", app.Name)
 	d.Set("application_type", app.ApplicationType)
 	d.Set("region", app.Region)
-	d.Set("application_id", app.ApplicationId)
-	d.Set("status", app.Status)
-	d.Set("status_description", app.StatusDescription)
 	d.Set("configuration", flattenAiFirewallApplicationConfig(app.Configuration))
 
 	return nil
@@ -335,4 +320,39 @@ func resourceAiFirewallApplicationDelete(ctx context.Context, d *schema.Resource
 
 	d.SetId("")
 	return nil
+}
+
+func resourceAiFirewallApplicationImport(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	raw := strings.TrimSpace(d.Id())
+	if raw == "" {
+		return nil, fmt.Errorf("expected import ID to be '<application_id>' or '<account_id>/<application_id>'")
+	}
+
+	var accountID string
+	resourceID := raw
+
+	if strings.Contains(raw, "/") {
+		parts := strings.SplitN(raw, "/", 2)
+		if len(parts) != 2 || strings.TrimSpace(parts[1]) == "" {
+			return nil, fmt.Errorf("invalid import ID %q: want '<application_id>' or '<account_id>/<application_id>'", raw)
+		}
+		accountID = strings.TrimSpace(parts[0])
+		resourceID = strings.TrimSpace(parts[1])
+	}
+
+	// Set the canonical Terraform ID to just the resource ID.
+	d.SetId(resourceID)
+
+	// Only set account_id if it was provided.
+	if accountID != "" {
+		caid, err := strconv.Atoi(accountID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid account_id %q: must be numeric", accountID)
+		}
+		if err := d.Set("account_id", caid); err != nil {
+			return nil, fmt.Errorf("setting account_id: %w", err)
+		}
+	}
+
+	return []*schema.ResourceData{d}, nil
 }

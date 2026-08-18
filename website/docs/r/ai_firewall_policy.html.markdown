@@ -41,7 +41,7 @@ resource "incapsula_ai_firewall_application" "sdk_app" {
 
 resource "incapsula_ai_firewall_policy" "sdk_policy" {
   account_id     = 1234567
-  application_id = incapsula_ai_firewall_application.sdk_app.application_id
+  application_id = incapsula_ai_firewall_application.sdk_app.id
   name           = "default-policy"
   active         = true
 
@@ -140,7 +140,7 @@ resource "incapsula_ai_firewall_policy" "sdk_policy" {
 
 The following arguments are supported:
 
-* `account_id` - (Required) Numeric identifier of the account that owns the application. Cannot be changed after the resource is created.
+* `account_id` - (Optional) Numeric identifier of the account that owns the application. Defaults to the account of the API credentials when omitted. Cannot be changed after the resource is created.
 * `application_id` - (Required) UUID of the AI Firewall application this policy belongs to. Cannot be changed after the resource is created.
 * `name` - (Required) Name of the policy. 1-100 characters.
 * `description` - (Optional) Description of the policy. Up to 500 characters.
@@ -206,15 +206,15 @@ Type-specific fields:
 
 The following attributes are exported:
 
-* `id` - The resource ID, equal to `policy_id`.
-* `policy_id` - UUID of the policy.
+* `id` - UUID of the policy.
 
 ## Import
 
-AI Firewall policy can be imported using its `policy_id`:
+AI Firewall policy can be imported using its `policy_id`, optionally prefixed with the `account_id`:
 
 ```
 $ terraform import incapsula_ai_firewall_policy.example 3f2504e0-4f89-41d3-9a0c-0305e82c3301
+$ terraform import incapsula_ai_firewall_policy.example 1234567/3f2504e0-4f89-41d3-9a0c-0305e82c3301
 ```
 
-On import the `account_id` is taken from configuration on the following apply.
+When the `account_id` is omitted from the import ID it is taken from the account of the API credentials.

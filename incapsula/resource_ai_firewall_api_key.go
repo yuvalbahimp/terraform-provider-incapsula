@@ -2,9 +2,11 @@ package incapsula
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -19,7 +21,7 @@ func resourceAiFirewallApiKey() *schema.Resource {
 		// No UpdateContext: only name is settable and the backend has no update endpoint,
 		// so every input is ForceNew.
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: resourceAiFirewallApiKeyImport,
 		},
 
 		Description: "Manages an AI Firewall API key for an application. The plaintext key is " +
@@ -29,8 +31,9 @@ func resourceAiFirewallApiKey() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"account_id": {
 				Type:        schema.TypeInt,
-				Description: "The Imperva account ID that owns the application.",
-				Required:    true,
+				Description: "The Imperva account ID that owns the application. Defaults to the account of the API credentials when omitted.",
+				Optional:    true,
+				Computed:    true,
 				ForceNew:    true,
 			},
 			"application_id": {
@@ -54,31 +57,11 @@ func resourceAiFirewallApiKey() *schema.Resource {
 				Type:        schema.TypeString,
 				Description: "The plaintext API key. Returned only once on creation and unrecoverable afterward; empty after import.",
 				Computed:    true,
-				Sensitive:   true,
-			},
-			"api_key_id": {
-				Type:        schema.TypeInt,
-				Description: "The numeric ID of the API key (same as the resource ID).",
-				Computed:    true,
-			},
-			"masked_api_key": {
-				Type:        schema.TypeString,
-				Description: "The masked representation of the API key.",
-				Computed:    true,
+        Sensitive:   true,
 			},
 			"active": {
 				Type:        schema.TypeBool,
 				Description: "Whether the API key is active.",
-				Computed:    true,
-			},
-			"created_at": {
-				Type:        schema.TypeInt,
-				Description: "Creation time of the API key (epoch milliseconds).",
-				Computed:    true,
-			},
-			"last_used_at": {
-				Type:        schema.TypeInt,
-				Description: "Last-used time of the API key (epoch milliseconds); 0 if never used.",
 				Computed:    true,
 			},
 		},
@@ -101,7 +84,6 @@ func resourceAiFirewallApiKeyCreate(ctx context.Context, d *schema.ResourceData,
 
 	// The plaintext key is available only in this response; persist it now — Read never touches it.
 	d.Set("api_key", created.FullKey)
-	d.Set("api_key_id", int(created.ApiKey.Id))
 	d.SetId(strconv.FormatInt(created.ApiKey.Id, 10))
 	log.Printf("[INFO] Created AI Firewall API key with ID: %d", created.ApiKey.Id)
 
@@ -134,11 +116,7 @@ func resourceAiFirewallApiKeyRead(ctx context.Context, d *schema.ResourceData, m
 	}
 	d.Set("application_id", apiKey.ApplicationId)
 	d.Set("name", apiKey.Name)
-	d.Set("api_key_id", int(apiKey.Id))
-	d.Set("masked_api_key", apiKey.MaskedApiKey)
 	d.Set("active", apiKey.Active)
-	d.Set("created_at", int(apiKey.CreatedAt))
-	d.Set("last_used_at", int(apiKey.LastUsedAt))
 
 	return nil
 }
@@ -159,4 +137,39 @@ func resourceAiFirewallApiKeyDelete(ctx context.Context, d *schema.ResourceData,
 
 	d.SetId("")
 	return nil
+}
+
+func resourceAiFirewallApiKeyImport(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	raw := strings.TrimSpace(d.Id())
+	if raw == "" {
+		return nil, fmt.Errorf("expected import ID to be '<api_key_id>' or '<account_id>/<api_key_id>'")
+	}
+
+	var accountID string
+	resourceID := raw
+
+	if strings.Contains(raw, "/") {
+		parts := strings.SplitN(raw, "/", 2)
+		if len(parts) != 2 || strings.TrimSpace(parts[1]) == "" {
+			return nil, fmt.Errorf("invalid import ID %q: want '<api_key_id>' or '<account_id>/<api_key_id>'", raw)
+		}
+		accountID = strings.TrimSpace(parts[0])
+		resourceID = strings.TrimSpace(parts[1])
+	}
+
+	// Set the canonical Terraform ID to just the resource ID.
+	d.SetId(resourceID)
+
+	// Only set account_id if it was provided.
+	if accountID != "" {
+		caid, err := strconv.Atoi(accountID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid account_id %q: must be numeric", accountID)
+		}
+		if err := d.Set("account_id", caid); err != nil {
+			return nil, fmt.Errorf("setting account_id: %w", err)
+		}
+	}
+
+	return []*schema.ResourceData{d}, nil
 }
