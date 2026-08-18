@@ -72,7 +72,7 @@ resource "incapsula_ai_firewall_policy" "sdk_policy" {
     phase  = "PROMPT"
     mode   = "ALERT"
     config = jsonencode({
-      enabledPatterns = ["aws_access_key_id", "email_address"]
+      enabledPatterns = ["aws_access_key_id", "bitcoin_bech32"]
     })
   }
 
@@ -104,7 +104,7 @@ resource "incapsula_ai_firewall_policy" "sdk_policy" {
     phase  = "RESPONSE"
     mode   = "BLOCK"
     config = jsonencode({
-      enabledPatterns = ["us_social_security_number"]
+      enabledPatterns = ["autopilot_api_key"]
       message         = "Sensitive data was detected in the response."
     })
   }
