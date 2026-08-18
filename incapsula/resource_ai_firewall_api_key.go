@@ -57,7 +57,7 @@ func resourceAiFirewallApiKey() *schema.Resource {
 				Type:        schema.TypeString,
 				Description: "The plaintext API key. Returned only once on creation and unrecoverable afterward; empty after import.",
 				Computed:    true,
-        Sensitive:   true,
+				Sensitive:   true,
 			},
 			"active": {
 				Type:        schema.TypeBool,
