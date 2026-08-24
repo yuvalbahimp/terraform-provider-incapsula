@@ -1,9 +1,9 @@
 ## 3.40.0 (Unreleased)
 
 FEATURES:
-* **New Resource:** `incapsula_ai_firewall_application`
-* **New Resource:** `incapsula_ai_firewall_policy`
-* **New Resource:** `incapsula_ai_firewall_api_key`
+* **New Resource:** `incapsula_ai_application_security_application`
+* **New Resource:** `incapsula_ai_application_security_policy`
+* **New Resource:** `incapsula_ai_application_security_api_key`
 
 ## 3.39.1 (Aug 11, 2026)
 

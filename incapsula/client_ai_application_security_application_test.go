@@ -8,40 +8,40 @@ import (
 	"testing"
 )
 
-func TestAiFirewallApplicationBadConnection(t *testing.T) {
+func TestAiApplicationSecurityApplicationBadConnection(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: "badness.incapsula.com"}
 	client := &Client{config: config, httpClient: &http.Client{Timeout: 1}}
 
-	_, err := client.CreateAiFirewallApplication(55, &AiFirewallApplicationRequest{Name: "app"})
+	_, err := client.CreateAiApplicationSecurityApplication(55, &AiApplicationSecurityApplicationRequest{Name: "app"})
 	if err == nil {
 		t.Errorf("Should have received an error")
 	}
 
-	_, err = client.GetAiFirewallApplication(55, "app-id")
+	_, err = client.GetAiApplicationSecurityApplication(55, "app-id")
 	if err == nil {
 		t.Errorf("Should have received an error")
 	}
 
-	_, err = client.UpdateAiFirewallApplication(55, "app-id", &AiFirewallApplicationRequest{})
+	_, err = client.UpdateAiApplicationSecurityApplication(55, "app-id", &AiApplicationSecurityApplicationRequest{})
 	if err == nil {
 		t.Errorf("Should have received an error")
 	}
 
-	err = client.DeleteAiFirewallApplication(55, "app-id")
+	err = client.DeleteAiApplicationSecurityApplication(55, "app-id")
 	if err == nil {
 		t.Errorf("Should have received an error")
 	}
 }
 
-func TestAiFirewallApplicationCreate(t *testing.T) {
+func TestAiApplicationSecurityApplicationCreate(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
 	accountID := 55
-	expectedEndpoint := fmt.Sprintf("%s?caid=%d", aiFirewallApplicationEndpoint, accountID)
+	expectedEndpoint := fmt.Sprintf("%s?caid=%d", aiApplicationSecurityApplicationEndpoint, accountID)
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.String() != expectedEndpoint {
@@ -51,11 +51,11 @@ func TestAiFirewallApplicationCreate(t *testing.T) {
 			t.Errorf("Expected POST, got %s", req.Method)
 		}
 
-		var envelope AiFirewallImpervaApiBody
+		var envelope AiApplicationSecurityImpervaApiBody
 		if err := json.NewDecoder(req.Body).Decode(&envelope); err != nil {
 			t.Fatalf("Failed to decode request body envelope: %s", err)
 		}
-		var payload AiFirewallApplicationRequest
+		var payload AiApplicationSecurityApplicationRequest
 		if err := json.Unmarshal(envelope.Data, &payload); err != nil {
 			t.Fatalf("Failed to decode envelope data: %s", err)
 		}
@@ -71,7 +71,7 @@ func TestAiFirewallApplicationCreate(t *testing.T) {
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	resp, err := client.CreateAiFirewallApplication(accountID, &AiFirewallApplicationRequest{Name: "my-app", ApplicationType: "API"})
+	resp, err := client.CreateAiApplicationSecurityApplication(accountID, &AiApplicationSecurityApplicationRequest{Name: "my-app", ApplicationType: "API"})
 	if err != nil {
 		t.Fatalf("Should not have received an error, got: %s", err)
 	}
@@ -80,13 +80,13 @@ func TestAiFirewallApplicationCreate(t *testing.T) {
 	}
 }
 
-func TestAiFirewallApplicationRead(t *testing.T) {
+func TestAiApplicationSecurityApplicationRead(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
 	accountID := 55
 	applicationID := "11111111-1111-1111-1111-111111111111"
-	expectedEndpoint := fmt.Sprintf("%s?applicationId=%s&caid=%d", aiFirewallApplicationEndpoint, applicationID, accountID)
+	expectedEndpoint := fmt.Sprintf("%s?applicationId=%s&caid=%d", aiApplicationSecurityApplicationEndpoint, applicationID, accountID)
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.String() != expectedEndpoint {
@@ -103,7 +103,7 @@ func TestAiFirewallApplicationRead(t *testing.T) {
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	resp, err := client.GetAiFirewallApplication(accountID, applicationID)
+	resp, err := client.GetAiApplicationSecurityApplication(accountID, applicationID)
 	if err != nil {
 		t.Fatalf("Should not have received an error, got: %s", err)
 	}
@@ -112,7 +112,7 @@ func TestAiFirewallApplicationRead(t *testing.T) {
 	}
 }
 
-func TestAiFirewallApplicationReadEmptyList(t *testing.T) {
+func TestAiApplicationSecurityApplicationReadEmptyList(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
@@ -125,7 +125,7 @@ func TestAiFirewallApplicationReadEmptyList(t *testing.T) {
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	resp, err := client.GetAiFirewallApplication(55, "does-not-exist")
+	resp, err := client.GetAiApplicationSecurityApplication(55, "does-not-exist")
 	if err != nil {
 		t.Fatalf("Should not have received an error, got: %s", err)
 	}
@@ -134,7 +134,7 @@ func TestAiFirewallApplicationReadEmptyList(t *testing.T) {
 	}
 }
 
-func TestAiFirewallApplicationReadNotFound(t *testing.T) {
+func TestAiApplicationSecurityApplicationReadNotFound(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
@@ -147,7 +147,7 @@ func TestAiFirewallApplicationReadNotFound(t *testing.T) {
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	resp, err := client.GetAiFirewallApplication(55, "does-not-exist")
+	resp, err := client.GetAiApplicationSecurityApplication(55, "does-not-exist")
 	if err != nil {
 		t.Fatalf("Should not have received an error, got: %s", err)
 	}
@@ -156,13 +156,13 @@ func TestAiFirewallApplicationReadNotFound(t *testing.T) {
 	}
 }
 
-func TestAiFirewallApplicationUpdate(t *testing.T) {
+func TestAiApplicationSecurityApplicationUpdate(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
 	accountID := 55
 	applicationID := "11111111-1111-1111-1111-111111111111"
-	expectedEndpoint := fmt.Sprintf("%s/%s?caid=%d", aiFirewallApplicationEndpoint, applicationID, accountID)
+	expectedEndpoint := fmt.Sprintf("%s/%s?caid=%d", aiApplicationSecurityApplicationEndpoint, applicationID, accountID)
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.String() != expectedEndpoint {
@@ -172,7 +172,7 @@ func TestAiFirewallApplicationUpdate(t *testing.T) {
 			t.Errorf("Expected PATCH, got %s", req.Method)
 		}
 
-		var envelope AiFirewallImpervaApiBody
+		var envelope AiApplicationSecurityImpervaApiBody
 		if err := json.NewDecoder(req.Body).Decode(&envelope); err != nil {
 			t.Fatalf("Failed to decode request body envelope: %s", err)
 		}
@@ -185,7 +185,7 @@ func TestAiFirewallApplicationUpdate(t *testing.T) {
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	resp, err := client.UpdateAiFirewallApplication(accountID, applicationID, &AiFirewallApplicationRequest{Name: "renamed-app", Region: "EU"})
+	resp, err := client.UpdateAiApplicationSecurityApplication(accountID, applicationID, &AiApplicationSecurityApplicationRequest{Name: "renamed-app", Region: "EU"})
 	if err != nil {
 		t.Fatalf("Should not have received an error, got: %s", err)
 	}
@@ -194,13 +194,13 @@ func TestAiFirewallApplicationUpdate(t *testing.T) {
 	}
 }
 
-func TestAiFirewallApplicationDelete(t *testing.T) {
+func TestAiApplicationSecurityApplicationDelete(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
 	accountID := 55
 	applicationID := "11111111-1111-1111-1111-111111111111"
-	expectedEndpoint := fmt.Sprintf("%s/%s?caid=%d", aiFirewallApplicationEndpoint, applicationID, accountID)
+	expectedEndpoint := fmt.Sprintf("%s/%s?caid=%d", aiApplicationSecurityApplicationEndpoint, applicationID, accountID)
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.String() != expectedEndpoint {
@@ -216,13 +216,13 @@ func TestAiFirewallApplicationDelete(t *testing.T) {
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	err := client.DeleteAiFirewallApplication(accountID, applicationID)
+	err := client.DeleteAiApplicationSecurityApplication(accountID, applicationID)
 	if err != nil {
 		t.Errorf("Should not have received an error, got: %s", err)
 	}
 }
 
-func TestAiFirewallApplicationErrorResponse(t *testing.T) {
+func TestAiApplicationSecurityApplicationErrorResponse(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
@@ -235,22 +235,22 @@ func TestAiFirewallApplicationErrorResponse(t *testing.T) {
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	_, err := client.CreateAiFirewallApplication(55, &AiFirewallApplicationRequest{Name: "app"})
+	_, err := client.CreateAiApplicationSecurityApplication(55, &AiApplicationSecurityApplicationRequest{Name: "app"})
 	if err == nil {
 		t.Errorf("Should have received an error")
 	}
 
-	_, err = client.GetAiFirewallApplication(55, "app-id")
+	_, err = client.GetAiApplicationSecurityApplication(55, "app-id")
 	if err == nil {
 		t.Errorf("Should have received an error")
 	}
 
-	_, err = client.UpdateAiFirewallApplication(55, "app-id", &AiFirewallApplicationRequest{})
+	_, err = client.UpdateAiApplicationSecurityApplication(55, "app-id", &AiApplicationSecurityApplicationRequest{})
 	if err == nil {
 		t.Errorf("Should have received an error")
 	}
 
-	err = client.DeleteAiFirewallApplication(55, "app-id")
+	err = client.DeleteAiApplicationSecurityApplication(55, "app-id")
 	if err == nil {
 		t.Errorf("Should have received an error")
 	}

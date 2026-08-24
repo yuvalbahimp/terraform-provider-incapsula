@@ -9,31 +9,31 @@ import (
 	"testing"
 )
 
-func TestAiFirewallApiKeyBadConnection(t *testing.T) {
+func TestAiApplicationSecurityApiKeyBadConnection(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: "badness.incapsula.com"}
 	client := &Client{config: config, httpClient: &http.Client{Timeout: 1}}
 
-	if _, err := client.CreateAiFirewallApiKey(55, "app-id", &AiFirewallApiKeyRequest{Name: "k"}); err == nil {
+	if _, err := client.CreateAiApplicationSecurityApiKey(55, "app-id", &AiApplicationSecurityApiKeyRequest{Name: "k"}); err == nil {
 		t.Errorf("Should have received an error")
 	}
-	if _, err := client.GetAiFirewallApiKey(55, 1); err == nil {
+	if _, err := client.GetAiApplicationSecurityApiKey(55, 1); err == nil {
 		t.Errorf("Should have received an error")
 	}
-	if err := client.DeleteAiFirewallApiKey(55, "app-id", 1); err == nil {
+	if err := client.DeleteAiApplicationSecurityApiKey(55, "app-id", 1); err == nil {
 		t.Errorf("Should have received an error")
 	}
 }
 
-func TestAiFirewallApiKeyCreate(t *testing.T) {
+func TestAiApplicationSecurityApiKeyCreate(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
 	accountID := 55
 	applicationID := "11111111-1111-1111-1111-111111111111"
-	expectedEndpoint := fmt.Sprintf("%s?caid=%d", fmt.Sprintf(aiFirewallApiKeyAppEndpoint, applicationID), accountID)
+	expectedEndpoint := fmt.Sprintf("%s?caid=%d", fmt.Sprintf(aiApplicationSecurityApiKeyAppEndpoint, applicationID), accountID)
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.String() != expectedEndpoint {
@@ -43,7 +43,7 @@ func TestAiFirewallApiKeyCreate(t *testing.T) {
 			t.Errorf("Expected POST, got %s", req.Method)
 		}
 
-		var envelope AiFirewallImpervaApiBody
+		var envelope AiApplicationSecurityImpervaApiBody
 		if err := json.NewDecoder(req.Body).Decode(&envelope); err != nil {
 			t.Fatalf("Failed to decode request body envelope: %s", err)
 		}
@@ -60,7 +60,7 @@ func TestAiFirewallApiKeyCreate(t *testing.T) {
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	resp, err := client.CreateAiFirewallApiKey(accountID, applicationID, &AiFirewallApiKeyRequest{Name: "my-key"})
+	resp, err := client.CreateAiApplicationSecurityApiKey(accountID, applicationID, &AiApplicationSecurityApiKeyRequest{Name: "my-key"})
 	if err != nil {
 		t.Fatalf("Should not have received an error, got: %s", err)
 	}
@@ -72,7 +72,7 @@ func TestAiFirewallApiKeyCreate(t *testing.T) {
 	}
 }
 
-func TestAiFirewallApiKeyCreateMaxLimitError(t *testing.T) {
+func TestAiApplicationSecurityApiKeyCreateMaxLimitError(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
@@ -85,7 +85,7 @@ func TestAiFirewallApiKeyCreateMaxLimitError(t *testing.T) {
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	_, err := client.CreateAiFirewallApiKey(55, "app-id", &AiFirewallApiKeyRequest{Name: "k"})
+	_, err := client.CreateAiApplicationSecurityApiKey(55, "app-id", &AiApplicationSecurityApiKeyRequest{Name: "k"})
 	if err == nil {
 		t.Fatalf("Should have received an error for a 400 response")
 	}
@@ -98,12 +98,12 @@ func TestAiFirewallApiKeyCreateMaxLimitError(t *testing.T) {
 	}
 }
 
-func TestAiFirewallApiKeyRead(t *testing.T) {
+func TestAiApplicationSecurityApiKeyRead(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
 	accountID := 55
-	expectedEndpoint := fmt.Sprintf("%s?caid=%d", aiFirewallApiKeyAccountEndpoint, accountID)
+	expectedEndpoint := fmt.Sprintf("%s?caid=%d", aiApplicationSecurityApiKeyAccountEndpoint, accountID)
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.String() != expectedEndpoint {
@@ -120,7 +120,7 @@ func TestAiFirewallApiKeyRead(t *testing.T) {
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	resp, err := client.GetAiFirewallApiKey(accountID, 42)
+	resp, err := client.GetAiApplicationSecurityApiKey(accountID, 42)
 	if err != nil {
 		t.Fatalf("Should not have received an error, got: %s", err)
 	}
@@ -135,7 +135,7 @@ func TestAiFirewallApiKeyRead(t *testing.T) {
 	}
 }
 
-func TestAiFirewallApiKeyReadNotFound(t *testing.T) {
+func TestAiApplicationSecurityApiKeyReadNotFound(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
@@ -148,7 +148,7 @@ func TestAiFirewallApiKeyReadNotFound(t *testing.T) {
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	resp, err := client.GetAiFirewallApiKey(55, 42)
+	resp, err := client.GetAiApplicationSecurityApiKey(55, 42)
 	if err != nil {
 		t.Fatalf("Should not have received an error, got: %s", err)
 	}
@@ -157,7 +157,7 @@ func TestAiFirewallApiKeyReadNotFound(t *testing.T) {
 	}
 }
 
-func TestAiFirewallApiKeyReadHttp404(t *testing.T) {
+func TestAiApplicationSecurityApiKeyReadHttp404(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
@@ -170,7 +170,7 @@ func TestAiFirewallApiKeyReadHttp404(t *testing.T) {
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	resp, err := client.GetAiFirewallApiKey(55, 42)
+	resp, err := client.GetAiApplicationSecurityApiKey(55, 42)
 	if err != nil {
 		t.Fatalf("Should not have received an error for 404, got: %s", err)
 	}
@@ -179,14 +179,14 @@ func TestAiFirewallApiKeyReadHttp404(t *testing.T) {
 	}
 }
 
-func TestAiFirewallApiKeyDelete(t *testing.T) {
+func TestAiApplicationSecurityApiKeyDelete(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
 	accountID := 55
 	applicationID := "11111111-1111-1111-1111-111111111111"
 	apiKeyID := int64(42)
-	expectedEndpoint := fmt.Sprintf("%s/%d?caid=%d", fmt.Sprintf(aiFirewallApiKeyAppEndpoint, applicationID), apiKeyID, accountID)
+	expectedEndpoint := fmt.Sprintf("%s/%d?caid=%d", fmt.Sprintf(aiApplicationSecurityApiKeyAppEndpoint, applicationID), apiKeyID, accountID)
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.String() != expectedEndpoint {
@@ -202,12 +202,12 @@ func TestAiFirewallApiKeyDelete(t *testing.T) {
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	if err := client.DeleteAiFirewallApiKey(accountID, applicationID, apiKeyID); err != nil {
+	if err := client.DeleteAiApplicationSecurityApiKey(accountID, applicationID, apiKeyID); err != nil {
 		t.Errorf("Should not have received an error, got: %s", err)
 	}
 }
 
-func TestAiFirewallApiKeyErrorResponse(t *testing.T) {
+func TestAiApplicationSecurityApiKeyErrorResponse(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
@@ -220,13 +220,13 @@ func TestAiFirewallApiKeyErrorResponse(t *testing.T) {
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	if _, err := client.CreateAiFirewallApiKey(55, "app-id", &AiFirewallApiKeyRequest{Name: "k"}); err == nil {
+	if _, err := client.CreateAiApplicationSecurityApiKey(55, "app-id", &AiApplicationSecurityApiKeyRequest{Name: "k"}); err == nil {
 		t.Errorf("Should have received an error")
 	}
-	if _, err := client.GetAiFirewallApiKey(55, 1); err == nil {
+	if _, err := client.GetAiApplicationSecurityApiKey(55, 1); err == nil {
 		t.Errorf("Should have received an error")
 	}
-	if err := client.DeleteAiFirewallApiKey(55, "app-id", 1); err == nil {
+	if err := client.DeleteAiApplicationSecurityApiKey(55, "app-id", 1); err == nil {
 		t.Errorf("Should have received an error")
 	}
 }

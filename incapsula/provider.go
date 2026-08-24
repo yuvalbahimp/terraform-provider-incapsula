@@ -157,9 +157,9 @@ func Provider() *schema.Provider {
 			"incapsula_site_cache_configuration":                               resourceSiteCacheConfiguration(),
 			"incapsula_short_renewal_cycle":                                    resourceShortRenewalCycle(),
 			"incapsula_api_client":                                             resourceApiClient(),
-			"incapsula_ai_firewall_application":                                resourceAiFirewallApplication(),
-			"incapsula_ai_firewall_policy":                                     resourceAiFirewallPolicy(),
-			"incapsula_ai_firewall_api_key":                                    resourceAiFirewallApiKey(),
+			"incapsula_ai_application_security_application":                    resourceAiApplicationSecurityApplication(),
+			"incapsula_ai_application_security_policy":                         resourceAiApplicationSecurityPolicy(),
+			"incapsula_ai_application_security_api_key":                        resourceAiApplicationSecurityApiKey(),
 		},
 	}
 

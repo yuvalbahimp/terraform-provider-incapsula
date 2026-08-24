@@ -8,47 +8,47 @@ import (
 	"testing"
 )
 
-func aiFirewallSampleGuardians() ([]AiFirewallGuardian, []AiFirewallGuardian) {
-	request := []AiFirewallGuardian{
-		{GuardianType: "PROMPT_INJECTION", GuardianMode: "BLOCK", GuardianPhase: "PROMPT", Active: true, Config: json.RawMessage(`{"type":"PROMPT_INJECTION"}`)},
+func aiApplicationSecuritySampleGuardrails() ([]AiApplicationSecurityGuardrail, []AiApplicationSecurityGuardrail) {
+	request := []AiApplicationSecurityGuardrail{
+		{GuardrailType: "PROMPT_INJECTION", GuardrailMode: "BLOCK", GuardrailPhase: "PROMPT", Active: true, Config: json.RawMessage(`{"type":"PROMPT_INJECTION"}`)},
 	}
-	response := []AiFirewallGuardian{
-		{GuardianType: "MODERATION", GuardianMode: "ALERT", GuardianPhase: "RESPONSE", Active: true, Config: json.RawMessage(`{"type":"MODERATION"}`)},
+	response := []AiApplicationSecurityGuardrail{
+		{GuardrailType: "MODERATION", GuardrailMode: "ALERT", GuardrailPhase: "RESPONSE", Active: true, Config: json.RawMessage(`{"type":"MODERATION"}`)},
 	}
 	return request, response
 }
 
-func TestAiFirewallPolicyBadConnection(t *testing.T) {
+func TestAiApplicationSecurityPolicyBadConnection(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: "badness.incapsula.com"}
 	client := &Client{config: config, httpClient: &http.Client{Timeout: 1}}
 
-	req, resp := aiFirewallSampleGuardians()
-	body := &AiFirewallPolicyRequest{Name: "p", Active: true, Request: req, Response: resp}
+	req, resp := aiApplicationSecuritySampleGuardrails()
+	body := &AiApplicationSecurityPolicyRequest{Name: "p", Active: true, Request: req, Response: resp}
 
-	if _, err := client.CreateAiFirewallPolicy(55, "app-id", body); err == nil {
+	if _, err := client.CreateAiApplicationSecurityPolicy(55, "app-id", body); err == nil {
 		t.Errorf("Should have received an error")
 	}
-	if _, err := client.GetAiFirewallPolicy(55, "app-id", "policy-id"); err == nil {
+	if _, err := client.GetAiApplicationSecurityPolicy(55, "app-id", "policy-id"); err == nil {
 		t.Errorf("Should have received an error")
 	}
-	if _, err := client.UpdateAiFirewallPolicy(55, "app-id", "policy-id", body); err == nil {
+	if _, err := client.UpdateAiApplicationSecurityPolicy(55, "app-id", "policy-id", body); err == nil {
 		t.Errorf("Should have received an error")
 	}
-	if err := client.DeleteAiFirewallPolicy(55, "app-id", "policy-id"); err == nil {
+	if err := client.DeleteAiApplicationSecurityPolicy(55, "app-id", "policy-id"); err == nil {
 		t.Errorf("Should have received an error")
 	}
 }
 
-func TestAiFirewallPolicyCreate(t *testing.T) {
+func TestAiApplicationSecurityPolicyCreate(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
 	accountID := 55
 	applicationID := "11111111-1111-1111-1111-111111111111"
-	expectedEndpoint := fmt.Sprintf("%s?caid=%d", fmt.Sprintf(aiFirewallPolicyEndpoint, applicationID), accountID)
+	expectedEndpoint := fmt.Sprintf("%s?caid=%d", fmt.Sprintf(aiApplicationSecurityPolicyEndpoint, applicationID), accountID)
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.String() != expectedEndpoint {
@@ -58,34 +58,34 @@ func TestAiFirewallPolicyCreate(t *testing.T) {
 			t.Errorf("Expected POST, got %s", req.Method)
 		}
 
-		var envelope AiFirewallImpervaApiBody
+		var envelope AiApplicationSecurityImpervaApiBody
 		if err := json.NewDecoder(req.Body).Decode(&envelope); err != nil {
 			t.Fatalf("Failed to decode request body envelope: %s", err)
 		}
-		var payload AiFirewallPolicyRequest
+		var payload AiApplicationSecurityPolicyRequest
 		if err := json.Unmarshal(envelope.Data, &payload); err != nil {
 			t.Fatalf("Failed to decode envelope data: %s", err)
 		}
 		if payload.Name != "my-policy" {
 			t.Errorf("Expected name my-policy, got %s", payload.Name)
 		}
-		if len(payload.Request) != 1 || payload.Request[0].GuardianType != "PROMPT_INJECTION" {
-			t.Errorf("Unexpected request guardians: %+v", payload.Request)
+		if len(payload.Request) != 1 || payload.Request[0].GuardrailType != "PROMPT_INJECTION" {
+			t.Errorf("Unexpected request guardrails: %+v", payload.Request)
 		}
-		if len(payload.Response) != 1 || payload.Response[0].GuardianType != "MODERATION" {
-			t.Errorf("Unexpected response guardians: %+v", payload.Response)
+		if len(payload.Response) != 1 || payload.Response[0].GuardrailType != "MODERATION" {
+			t.Errorf("Unexpected response guardrails: %+v", payload.Response)
 		}
 
 		rw.WriteHeader(201)
-		rw.Write([]byte(`{"data":{"id":"aaaaaaaa-0000-0000-0000-000000000001","accountId":55,"applicationId":"11111111-1111-1111-1111-111111111111","name":"my-policy","active":true,"request":[{"guardianType":"PROMPT_INJECTION","guardianMode":"BLOCK","guardianPhase":"PROMPT","active":true,"config":{"type":"PROMPT_INJECTION"}}],"response":[{"guardianType":"MODERATION","guardianMode":"ALERT","guardianPhase":"RESPONSE","active":true,"config":{"type":"MODERATION"}}]}}`))
+		rw.Write([]byte(`{"data":{"id":"aaaaaaaa-0000-0000-0000-000000000001","accountId":55,"applicationId":"11111111-1111-1111-1111-111111111111","name":"my-policy","active":true,"request":[{"guardrailType":"PROMPT_INJECTION","guardrailMode":"BLOCK","guardrailPhase":"PROMPT","active":true,"config":{"type":"PROMPT_INJECTION"}}],"response":[{"guardrailType":"MODERATION","guardrailMode":"ALERT","guardrailPhase":"RESPONSE","active":true,"config":{"type":"MODERATION"}}]}}`))
 	}))
 	defer server.Close()
 
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	reqG, respG := aiFirewallSampleGuardians()
-	resp, err := client.CreateAiFirewallPolicy(accountID, applicationID, &AiFirewallPolicyRequest{Name: "my-policy", Active: true, Request: reqG, Response: respG})
+	reqG, respG := aiApplicationSecuritySampleGuardrails()
+	resp, err := client.CreateAiApplicationSecurityPolicy(accountID, applicationID, &AiApplicationSecurityPolicyRequest{Name: "my-policy", Active: true, Request: reqG, Response: respG})
 	if err != nil {
 		t.Fatalf("Should not have received an error, got: %s", err)
 	}
@@ -93,11 +93,11 @@ func TestAiFirewallPolicyCreate(t *testing.T) {
 		t.Errorf("Unexpected policy id: %s", resp.Id)
 	}
 	if len(resp.Request) != 1 || len(resp.Response) != 1 {
-		t.Errorf("Unexpected guardians in response: %+v", resp)
+		t.Errorf("Unexpected guardrails in response: %+v", resp)
 	}
 }
 
-func TestAiFirewallPolicyCreateError(t *testing.T) {
+func TestAiApplicationSecurityPolicyCreateError(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
@@ -110,21 +110,21 @@ func TestAiFirewallPolicyCreateError(t *testing.T) {
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	reqG, respG := aiFirewallSampleGuardians()
-	_, err := client.CreateAiFirewallPolicy(55, "app-id", &AiFirewallPolicyRequest{Name: "p", Active: true, Request: reqG, Response: respG})
+	reqG, respG := aiApplicationSecuritySampleGuardrails()
+	_, err := client.CreateAiApplicationSecurityPolicy(55, "app-id", &AiApplicationSecurityPolicyRequest{Name: "p", Active: true, Request: reqG, Response: respG})
 	if err == nil {
 		t.Fatalf("Should have received an error for a 400 response")
 	}
 }
 
-func TestAiFirewallPolicyRead(t *testing.T) {
+func TestAiApplicationSecurityPolicyRead(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
 	accountID := 55
 	applicationID := "11111111-1111-1111-1111-111111111111"
 	policyID := "aaaaaaaa-0000-0000-0000-000000000001"
-	expectedEndpoint := fmt.Sprintf("%s/%s?caid=%d", fmt.Sprintf(aiFirewallPolicyEndpoint, applicationID), policyID, accountID)
+	expectedEndpoint := fmt.Sprintf("%s/%s?caid=%d", fmt.Sprintf(aiApplicationSecurityPolicyEndpoint, applicationID), policyID, accountID)
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.String() != expectedEndpoint {
@@ -134,14 +134,14 @@ func TestAiFirewallPolicyRead(t *testing.T) {
 			t.Errorf("Expected GET, got %s", req.Method)
 		}
 		rw.WriteHeader(200)
-		rw.Write([]byte(`{"data":{"id":"aaaaaaaa-0000-0000-0000-000000000001","accountId":55,"applicationId":"11111111-1111-1111-1111-111111111111","name":"my-policy","active":true,"request":[{"guardianType":"PROMPT_INJECTION","guardianMode":"BLOCK","guardianPhase":"PROMPT","active":true,"config":{"type":"PROMPT_INJECTION"}}],"response":[]}}`))
+		rw.Write([]byte(`{"data":{"id":"aaaaaaaa-0000-0000-0000-000000000001","accountId":55,"applicationId":"11111111-1111-1111-1111-111111111111","name":"my-policy","active":true,"request":[{"guardrailType":"PROMPT_INJECTION","guardrailMode":"BLOCK","guardrailPhase":"PROMPT","active":true,"config":{"type":"PROMPT_INJECTION"}}],"response":[]}}`))
 	}))
 	defer server.Close()
 
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	resp, err := client.GetAiFirewallPolicy(accountID, applicationID, policyID)
+	resp, err := client.GetAiApplicationSecurityPolicy(accountID, applicationID, policyID)
 	if err != nil {
 		t.Fatalf("Should not have received an error, got: %s", err)
 	}
@@ -153,7 +153,7 @@ func TestAiFirewallPolicyRead(t *testing.T) {
 	}
 }
 
-func TestAiFirewallPolicyReadNotFound(t *testing.T) {
+func TestAiApplicationSecurityPolicyReadNotFound(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
@@ -166,7 +166,7 @@ func TestAiFirewallPolicyReadNotFound(t *testing.T) {
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	resp, err := client.GetAiFirewallPolicy(55, "app-id", "does-not-exist")
+	resp, err := client.GetAiApplicationSecurityPolicy(55, "app-id", "does-not-exist")
 	if err != nil {
 		t.Fatalf("Should not have received an error, got: %s", err)
 	}
@@ -175,14 +175,14 @@ func TestAiFirewallPolicyReadNotFound(t *testing.T) {
 	}
 }
 
-func TestAiFirewallPolicyUpdate(t *testing.T) {
+func TestAiApplicationSecurityPolicyUpdate(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
 	accountID := 55
 	applicationID := "11111111-1111-1111-1111-111111111111"
 	policyID := "aaaaaaaa-0000-0000-0000-000000000001"
-	expectedEndpoint := fmt.Sprintf("%s/%s?caid=%d", fmt.Sprintf(aiFirewallPolicyEndpoint, applicationID), policyID, accountID)
+	expectedEndpoint := fmt.Sprintf("%s/%s?caid=%d", fmt.Sprintf(aiApplicationSecurityPolicyEndpoint, applicationID), policyID, accountID)
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.String() != expectedEndpoint {
@@ -192,7 +192,7 @@ func TestAiFirewallPolicyUpdate(t *testing.T) {
 			t.Errorf("Expected PATCH, got %s", req.Method)
 		}
 
-		var envelope AiFirewallImpervaApiBody
+		var envelope AiApplicationSecurityImpervaApiBody
 		if err := json.NewDecoder(req.Body).Decode(&envelope); err != nil {
 			t.Fatalf("Failed to decode request body envelope: %s", err)
 		}
@@ -205,8 +205,8 @@ func TestAiFirewallPolicyUpdate(t *testing.T) {
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	reqG, respG := aiFirewallSampleGuardians()
-	resp, err := client.UpdateAiFirewallPolicy(accountID, applicationID, policyID, &AiFirewallPolicyRequest{Name: "renamed-policy", Active: false, Request: reqG, Response: respG})
+	reqG, respG := aiApplicationSecuritySampleGuardrails()
+	resp, err := client.UpdateAiApplicationSecurityPolicy(accountID, applicationID, policyID, &AiApplicationSecurityPolicyRequest{Name: "renamed-policy", Active: false, Request: reqG, Response: respG})
 	if err != nil {
 		t.Fatalf("Should not have received an error, got: %s", err)
 	}
@@ -215,14 +215,14 @@ func TestAiFirewallPolicyUpdate(t *testing.T) {
 	}
 }
 
-func TestAiFirewallPolicyDelete(t *testing.T) {
+func TestAiApplicationSecurityPolicyDelete(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
 	accountID := 55
 	applicationID := "11111111-1111-1111-1111-111111111111"
 	policyID := "aaaaaaaa-0000-0000-0000-000000000001"
-	expectedEndpoint := fmt.Sprintf("%s/%s?caid=%d", fmt.Sprintf(aiFirewallPolicyEndpoint, applicationID), policyID, accountID)
+	expectedEndpoint := fmt.Sprintf("%s/%s?caid=%d", fmt.Sprintf(aiApplicationSecurityPolicyEndpoint, applicationID), policyID, accountID)
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.String() != expectedEndpoint {
@@ -238,12 +238,12 @@ func TestAiFirewallPolicyDelete(t *testing.T) {
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	if err := client.DeleteAiFirewallPolicy(accountID, applicationID, policyID); err != nil {
+	if err := client.DeleteAiApplicationSecurityPolicy(accountID, applicationID, policyID); err != nil {
 		t.Errorf("Should not have received an error, got: %s", err)
 	}
 }
 
-func TestAiFirewallPolicyErrorResponse(t *testing.T) {
+func TestAiApplicationSecurityPolicyErrorResponse(t *testing.T) {
 	restore := withShortRetries()
 	defer restore()
 
@@ -256,19 +256,19 @@ func TestAiFirewallPolicyErrorResponse(t *testing.T) {
 	config := &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}
 	client := &Client{config: config, httpClient: &http.Client{}}
 
-	reqG, respG := aiFirewallSampleGuardians()
-	body := &AiFirewallPolicyRequest{Name: "p", Active: true, Request: reqG, Response: respG}
+	reqG, respG := aiApplicationSecuritySampleGuardrails()
+	body := &AiApplicationSecurityPolicyRequest{Name: "p", Active: true, Request: reqG, Response: respG}
 
-	if _, err := client.CreateAiFirewallPolicy(55, "app-id", body); err == nil {
+	if _, err := client.CreateAiApplicationSecurityPolicy(55, "app-id", body); err == nil {
 		t.Errorf("Should have received an error")
 	}
-	if _, err := client.GetAiFirewallPolicy(55, "app-id", "policy-id"); err == nil {
+	if _, err := client.GetAiApplicationSecurityPolicy(55, "app-id", "policy-id"); err == nil {
 		t.Errorf("Should have received an error")
 	}
-	if _, err := client.UpdateAiFirewallPolicy(55, "app-id", "policy-id", body); err == nil {
+	if _, err := client.UpdateAiApplicationSecurityPolicy(55, "app-id", "policy-id", body); err == nil {
 		t.Errorf("Should have received an error")
 	}
-	if err := client.DeleteAiFirewallPolicy(55, "app-id", "policy-id"); err == nil {
+	if err := client.DeleteAiApplicationSecurityPolicy(55, "app-id", "policy-id"); err == nil {
 		t.Errorf("Should have received an error")
 	}
 }

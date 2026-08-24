@@ -12,16 +12,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAiFirewallApplication() *schema.Resource {
+func resourceAiApplicationSecurityApplication() *schema.Resource {
 	return &schema.Resource{
-		CreateContext: resourceAiFirewallApplicationCreate,
-		ReadContext:   resourceAiFirewallApplicationRead,
-		UpdateContext: resourceAiFirewallApplicationUpdate,
-		DeleteContext: resourceAiFirewallApplicationDelete,
+		CreateContext: resourceAiApplicationSecurityApplicationCreate,
+		ReadContext:   resourceAiApplicationSecurityApplicationRead,
+		UpdateContext: resourceAiApplicationSecurityApplicationUpdate,
+		DeleteContext: resourceAiApplicationSecurityApplicationDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: resourceAiFirewallApplicationImport,
+			StateContext: resourceAiApplicationSecurityApplicationImport,
 		},
-		CustomizeDiff: resourceAiFirewallApplicationCustomizeDiff,
+		CustomizeDiff: resourceAiApplicationSecurityApplicationCustomizeDiff,
 		Schema: map[string]*schema.Schema{
 			"account_id": {
 				Type:        schema.TypeInt,
@@ -33,7 +33,7 @@ func resourceAiFirewallApplication() *schema.Resource {
 			"name": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "Name of the AI Firewall application.",
+				Description: "Name of the AI Application Security application.",
 			},
 			"application_type": {
 				Type:         schema.TypeString,
@@ -145,7 +145,7 @@ func resourceAiFirewallApplication() *schema.Resource {
 	}
 }
 
-func resourceAiFirewallApplicationCustomizeDiff(ctx context.Context, d *schema.ResourceDiff, m interface{}) error {
+func resourceAiApplicationSecurityApplicationCustomizeDiff(ctx context.Context, d *schema.ResourceDiff, m interface{}) error {
 	applicationType := d.Get("application_type").(string)
 	_, hasConfig := d.GetOk("configuration")
 
@@ -163,13 +163,13 @@ func resourceAiFirewallApplicationCustomizeDiff(ctx context.Context, d *schema.R
 	return nil
 }
 
-func expandAiFirewallApplicationConfig(configList []interface{}) *AiFirewallApplicationConfig {
+func expandAiApplicationSecurityApplicationConfig(configList []interface{}) *AiApplicationSecurityApplicationConfig {
 	if len(configList) == 0 || configList[0] == nil {
 		return nil
 	}
 	raw := configList[0].(map[string]interface{})
 
-	config := &AiFirewallApplicationConfig{
+	config := &AiApplicationSecurityApplicationConfig{
 		SiteId:                   int64(raw["site_id"].(int)),
 		Path:                     raw["path"].(string),
 		ContentType:              raw["content_type"].(string),
@@ -180,7 +180,7 @@ func expandAiFirewallApplicationConfig(configList []interface{}) *AiFirewallAppl
 
 	if reqList, ok := raw["request"].([]interface{}); ok && len(reqList) > 0 && reqList[0] != nil {
 		reqRaw := reqList[0].(map[string]interface{})
-		config.Request = &AiFirewallStreamingRequest{
+		config.Request = &AiApplicationSecurityStreamingRequest{
 			MessagePath: reqRaw["message_path"].(string),
 			ContentPath: reqRaw["content_path"].(string),
 			RolePath:    reqRaw["role_path"].(string),
@@ -189,7 +189,7 @@ func expandAiFirewallApplicationConfig(configList []interface{}) *AiFirewallAppl
 
 	if respList, ok := raw["response"].([]interface{}); ok && len(respList) > 0 && respList[0] != nil {
 		respRaw := respList[0].(map[string]interface{})
-		config.Response = &AiFirewallStreamingResponse{
+		config.Response = &AiApplicationSecurityStreamingResponse{
 			RolePath:          respRaw["role_path"].(string),
 			ContentPath:       respRaw["content_path"].(string),
 			FinishReasonPath:  respRaw["finish_reason_path"].(string),
@@ -201,7 +201,7 @@ func expandAiFirewallApplicationConfig(configList []interface{}) *AiFirewallAppl
 	return config
 }
 
-func flattenAiFirewallApplicationConfig(config *AiFirewallApplicationConfig) []interface{} {
+func flattenAiApplicationSecurityApplicationConfig(config *AiApplicationSecurityApplicationConfig) []interface{} {
 	if config == nil {
 		return nil
 	}
@@ -240,40 +240,40 @@ func flattenAiFirewallApplicationConfig(config *AiFirewallApplicationConfig) []i
 	return []interface{}{result}
 }
 
-func resourceAiFirewallApplicationCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceAiApplicationSecurityApplicationCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	accountID := d.Get("account_id").(int)
 
-	req := &AiFirewallApplicationRequest{
+	req := &AiApplicationSecurityApplicationRequest{
 		Name:            d.Get("name").(string),
 		ApplicationType: d.Get("application_type").(string),
 		Region:          d.Get("region").(string),
-		Configuration:   expandAiFirewallApplicationConfig(d.Get("configuration").([]interface{})),
+		Configuration:   expandAiApplicationSecurityApplicationConfig(d.Get("configuration").([]interface{})),
 	}
 
-	app, err := client.CreateAiFirewallApplication(accountID, req)
+	app, err := client.CreateAiApplicationSecurityApplication(accountID, req)
 	if err != nil {
-		return diag.Errorf("Could not create AI Firewall application: %s", err)
+		return diag.Errorf("Could not create AI Application Security application: %s", err)
 	}
 
 	d.SetId(app.ApplicationId)
-	log.Printf("[INFO] Created AI Firewall application with ID: %s", app.ApplicationId)
+	log.Printf("[INFO] Created AI Application Security application with ID: %s", app.ApplicationId)
 
-	return resourceAiFirewallApplicationRead(ctx, d, m)
+	return resourceAiApplicationSecurityApplicationRead(ctx, d, m)
 }
 
-func resourceAiFirewallApplicationRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceAiApplicationSecurityApplicationRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	accountID := d.Get("account_id").(int)
 	applicationID := d.Id()
 
-	app, err := client.GetAiFirewallApplication(accountID, applicationID)
+	app, err := client.GetAiApplicationSecurityApplication(accountID, applicationID)
 	if err != nil {
-		return diag.Errorf("Could not read AI Firewall application with ID %s: %s", applicationID, err)
+		return diag.Errorf("Could not read AI Application Security application with ID %s: %s", applicationID, err)
 	}
 
 	if app == nil {
-		log.Printf("[INFO] AI Firewall application with ID %s not found, removing from state", applicationID)
+		log.Printf("[INFO] AI Application Security application with ID %s not found, removing from state", applicationID)
 		d.SetId("")
 		return nil
 	}
@@ -282,47 +282,47 @@ func resourceAiFirewallApplicationRead(ctx context.Context, d *schema.ResourceDa
 	d.Set("name", app.Name)
 	d.Set("application_type", app.ApplicationType)
 	d.Set("region", app.Region)
-	d.Set("configuration", flattenAiFirewallApplicationConfig(app.Configuration))
+	d.Set("configuration", flattenAiApplicationSecurityApplicationConfig(app.Configuration))
 
 	return nil
 }
 
-func resourceAiFirewallApplicationUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceAiApplicationSecurityApplicationUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	accountID := d.Get("account_id").(int)
 	applicationID := d.Id()
 
-	req := &AiFirewallApplicationRequest{
+	req := &AiApplicationSecurityApplicationRequest{
 		Name:          d.Get("name").(string),
-		Configuration: expandAiFirewallApplicationConfig(d.Get("configuration").([]interface{})),
+		Configuration: expandAiApplicationSecurityApplicationConfig(d.Get("configuration").([]interface{})),
 	}
 
 	if d.HasChange("region") {
 		req.Region = d.Get("region").(string)
 	}
 
-	_, err := client.UpdateAiFirewallApplication(accountID, applicationID, req)
+	_, err := client.UpdateAiApplicationSecurityApplication(accountID, applicationID, req)
 	if err != nil {
-		return diag.Errorf("Could not update AI Firewall application with ID %s: %s", applicationID, err)
+		return diag.Errorf("Could not update AI Application Security application with ID %s: %s", applicationID, err)
 	}
 
-	return resourceAiFirewallApplicationRead(ctx, d, m)
+	return resourceAiApplicationSecurityApplicationRead(ctx, d, m)
 }
 
-func resourceAiFirewallApplicationDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceAiApplicationSecurityApplicationDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	accountID := d.Get("account_id").(int)
 	applicationID := d.Id()
 
-	if err := client.DeleteAiFirewallApplication(accountID, applicationID); err != nil {
-		return diag.Errorf("Could not delete AI Firewall application with ID %s: %s", applicationID, err)
+	if err := client.DeleteAiApplicationSecurityApplication(accountID, applicationID); err != nil {
+		return diag.Errorf("Could not delete AI Application Security application with ID %s: %s", applicationID, err)
 	}
 
 	d.SetId("")
 	return nil
 }
 
-func resourceAiFirewallApplicationImport(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func resourceAiApplicationSecurityApplicationImport(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 	raw := strings.TrimSpace(d.Id())
 	if raw == "" {
 		return nil, fmt.Errorf("expected import ID to be '<application_id>' or '<account_id>/<application_id>'")

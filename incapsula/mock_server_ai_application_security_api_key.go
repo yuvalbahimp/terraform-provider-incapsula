@@ -1,7 +1,7 @@
-// Mock Imperva API Server — AI Firewall API key endpoints
+// Mock Imperva API Server — AI Application Security API key endpoints
 //
-// Implements the stateful behaviour of the AI Firewall management service's
-// api-key endpoints needed by the incapsula_ai_firewall_api_key acceptance tests:
+// Implements the stateful behaviour of the AI Application Security management service's
+// api-key endpoints needed by the incapsula_ai_application_security_api_key acceptance tests:
 //   - POST   /v3/applications/{applicationId}/api-keys        (create, app-scoped)
 //   - DELETE /v3/applications/{applicationId}/api-keys/{id}   (delete, app-scoped)
 //   - GET    /v3/api-keys                                     (account-level list, used by Read/import)
@@ -20,11 +20,11 @@ import (
 	"strings"
 )
 
-const mockAiFirewallApiKeyMaxPerAccount = 5
+const mockAiApplicationSecurityApiKeyMaxPerAccount = 5
 
-// MockAiFirewallApiKey represents an AI Firewall API key in the mock server.
+// MockAiApplicationSecurityApiKey represents an AI Application Security API key in the mock server.
 // Field shapes match ApiKeyDto.
-type MockAiFirewallApiKey struct {
+type MockAiApplicationSecurityApiKey struct {
 	Id            int64  `json:"id"`
 	MaskedApiKey  string `json:"maskedApiKey"`
 	AccountId     int64  `json:"accountId"`
@@ -35,18 +35,18 @@ type MockAiFirewallApiKey struct {
 	ApplicationId string `json:"applicationId"`
 }
 
-// handleAiFirewallApiKeys routes AI Firewall api-key requests. It distinguishes the
+// handleAiApplicationSecurityApiKeys routes AI Application Security api-key requests. It distinguishes the
 // account-level list (GET /v3/api-keys) from the application-scoped create/delete paths
 // (/v3/applications/{applicationId}/api-keys[/{apiKeyId}]).
-func (m *MockImpervaServer) handleAiFirewallApiKeys(w http.ResponseWriter, r *http.Request, path string) {
+func (m *MockImpervaServer) handleAiApplicationSecurityApiKeys(w http.ResponseWriter, r *http.Request, path string) {
 	// Account-level list: /v3/api-keys (no /applications/ segment).
 	if !strings.Contains(path, "v3/applications/") {
 		if r.Method == http.MethodGet {
-			m.handleAiFirewallApiKeyList(w, r)
+			m.handleAiApplicationSecurityApiKeyList(w, r)
 			return
 		}
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		m.writeAiFirewallError(w, fmt.Sprintf("Method not allowed on api-keys list: %s", r.Method))
+		m.writeAiApplicationSecurityError(w, fmt.Sprintf("Method not allowed on api-keys list: %s", r.Method))
 		return
 	}
 
@@ -57,7 +57,7 @@ func (m *MockImpervaServer) handleAiFirewallApiKeys(w http.ResponseWriter, r *ht
 	segments := strings.Split(strings.Trim(rest, "/"), "/")
 	if len(segments) < 2 || segments[1] != "api-keys" {
 		w.WriteHeader(http.StatusNotFound)
-		m.writeAiFirewallError(w, fmt.Sprintf("Invalid api-key path: %s", path))
+		m.writeAiApplicationSecurityError(w, fmt.Sprintf("Invalid api-key path: %s", path))
 		return
 	}
 	applicationID := segments[0]
@@ -68,21 +68,21 @@ func (m *MockImpervaServer) handleAiFirewallApiKeys(w http.ResponseWriter, r *ht
 
 	switch r.Method {
 	case http.MethodPost:
-		m.handleAiFirewallApiKeyCreate(w, r, applicationID)
+		m.handleAiApplicationSecurityApiKeyCreate(w, r, applicationID)
 	case http.MethodDelete:
-		m.handleAiFirewallApiKeyDelete(w, apiKeyID)
+		m.handleAiApplicationSecurityApiKeyDelete(w, apiKeyID)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		m.writeAiFirewallError(w, fmt.Sprintf("Method not allowed: %s", r.Method))
+		m.writeAiApplicationSecurityError(w, fmt.Sprintf("Method not allowed: %s", r.Method))
 	}
 }
 
-// handleAiFirewallApiKeyCreate handles POST /v3/applications/{applicationId}/api-keys.
-func (m *MockImpervaServer) handleAiFirewallApiKeyCreate(w http.ResponseWriter, r *http.Request, applicationID string) {
-	req, err := m.decodeAiFirewallApiKeyRequest(r)
+// handleAiApplicationSecurityApiKeyCreate handles POST /v3/applications/{applicationId}/api-keys.
+func (m *MockImpervaServer) handleAiApplicationSecurityApiKeyCreate(w http.ResponseWriter, r *http.Request, applicationID string) {
+	req, err := m.decodeAiApplicationSecurityApiKeyRequest(r)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		m.writeAiFirewallError(w, fmt.Sprintf("Invalid request body: %s", err))
+		m.writeAiApplicationSecurityError(w, fmt.Sprintf("Invalid request body: %s", err))
 		return
 	}
 
@@ -91,22 +91,22 @@ func (m *MockImpervaServer) handleAiFirewallApiKeyCreate(w http.ResponseWriter, 
 	m.mu.Lock()
 	// Enforce the max-5-keys-per-account limit, matching the backend.
 	count := 0
-	for _, k := range m.aiFirewallApiKeys {
+	for _, k := range m.aiApplicationSecurityApiKeys {
 		if k.AccountId == accountID {
 			count++
 		}
 	}
-	if count >= mockAiFirewallApiKeyMaxPerAccount {
+	if count >= mockAiApplicationSecurityApiKeyMaxPerAccount {
 		m.mu.Unlock()
 		w.WriteHeader(http.StatusBadRequest)
-		m.writeAiFirewallError(w, fmt.Sprintf("An account may hold at most %d API keys", mockAiFirewallApiKeyMaxPerAccount))
+		m.writeAiApplicationSecurityError(w, fmt.Sprintf("An account may hold at most %d API keys", mockAiApplicationSecurityApiKeyMaxPerAccount))
 		return
 	}
 
-	id := m.nextAiFirewallApiKeyID
-	m.nextAiFirewallApiKeyID++
+	id := m.nextAiApplicationSecurityApiKeyID
+	m.nextAiApplicationSecurityApiKeyID++
 
-	key := &MockAiFirewallApiKey{
+	key := &MockAiApplicationSecurityApiKey{
 		Id:            id,
 		MaskedApiKey:  fmt.Sprintf("****%04d", id),
 		AccountId:     accountID,
@@ -115,28 +115,28 @@ func (m *MockImpervaServer) handleAiFirewallApiKeyCreate(w http.ResponseWriter, 
 		Active:        true,
 		ApplicationId: applicationID,
 	}
-	m.aiFirewallApiKeys[id] = key
+	m.aiApplicationSecurityApiKeys[id] = key
 	m.mu.Unlock()
 
 	fullKey := fmt.Sprintf("aifw-%012d-plaintext-secret", id)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	m.encodeAiFirewallData(w, map[string]interface{}{
+	m.encodeAiApplicationSecurityData(w, map[string]interface{}{
 		"apiKey":  key,
 		"fullKey": fullKey,
 	})
 }
 
-// handleAiFirewallApiKeyList handles GET /v3/api-keys?caid=, returning the account's keys.
-func (m *MockImpervaServer) handleAiFirewallApiKeyList(w http.ResponseWriter, r *http.Request) {
+// handleAiApplicationSecurityApiKeyList handles GET /v3/api-keys?caid=, returning the account's keys.
+func (m *MockImpervaServer) handleAiApplicationSecurityApiKeyList(w http.ResponseWriter, r *http.Request) {
 	accountID := mockCaid(r)
 
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	list := make([]*MockAiFirewallApiKey, 0)
-	for _, k := range m.aiFirewallApiKeys {
+	list := make([]*MockAiApplicationSecurityApiKey, 0)
+	for _, k := range m.aiApplicationSecurityApiKeys {
 		if accountID == 0 || k.AccountId == accountID {
 			list = append(list, k)
 		}
@@ -144,54 +144,54 @@ func (m *MockImpervaServer) handleAiFirewallApiKeyList(w http.ResponseWriter, r 
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	m.encodeAiFirewallData(w, map[string]interface{}{
+	m.encodeAiApplicationSecurityData(w, map[string]interface{}{
 		"apiKeys":    list,
 		"totalCount": len(list),
 	})
 }
 
-// handleAiFirewallApiKeyDelete handles DELETE /v3/applications/{applicationId}/api-keys/{apiKeyId}.
-func (m *MockImpervaServer) handleAiFirewallApiKeyDelete(w http.ResponseWriter, apiKeyID string) {
+// handleAiApplicationSecurityApiKeyDelete handles DELETE /v3/applications/{applicationId}/api-keys/{apiKeyId}.
+func (m *MockImpervaServer) handleAiApplicationSecurityApiKeyDelete(w http.ResponseWriter, apiKeyID string) {
 	id, err := strconv.ParseInt(apiKeyID, 10, 64)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		m.writeAiFirewallError(w, fmt.Sprintf("Invalid api-key id: %s", apiKeyID))
+		m.writeAiApplicationSecurityError(w, fmt.Sprintf("Invalid api-key id: %s", apiKeyID))
 		return
 	}
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if _, ok := m.aiFirewallApiKeys[id]; !ok {
+	if _, ok := m.aiApplicationSecurityApiKeys[id]; !ok {
 		w.WriteHeader(http.StatusNotFound)
-		m.writeAiFirewallError(w, fmt.Sprintf("API key not found: %d", id))
+		m.writeAiApplicationSecurityError(w, fmt.Sprintf("API key not found: %d", id))
 		return
 	}
 
-	delete(m.aiFirewallApiKeys, id)
+	delete(m.aiApplicationSecurityApiKeys, id)
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// decodeAiFirewallApiKeyRequest unwraps the {"data": {…}} envelope into an api-key request.
-func (m *MockImpervaServer) decodeAiFirewallApiKeyRequest(r *http.Request) (*AiFirewallApiKeyRequest, error) {
+// decodeAiApplicationSecurityApiKeyRequest unwraps the {"data": {…}} envelope into an api-key request.
+func (m *MockImpervaServer) decodeAiApplicationSecurityApiKeyRequest(r *http.Request) (*AiApplicationSecurityApiKeyRequest, error) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	var envelope AiFirewallImpervaApiBody
+	var envelope AiApplicationSecurityImpervaApiBody
 	if err := json.Unmarshal(body, &envelope); err != nil {
 		return nil, err
 	}
 
-	var req AiFirewallApiKeyRequest
+	var req AiApplicationSecurityApiKeyRequest
 	if err := json.Unmarshal(envelope.Data, &req); err != nil {
 		return nil, err
 	}
 	return &req, nil
 }
 
-// encodeAiFirewallData writes payload wrapped in the {"data": …} envelope.
-func (m *MockImpervaServer) encodeAiFirewallData(w http.ResponseWriter, payload interface{}) {
+// encodeAiApplicationSecurityData writes payload wrapped in the {"data": …} envelope.
+func (m *MockImpervaServer) encodeAiApplicationSecurityData(w http.ResponseWriter, payload interface{}) {
 	json.NewEncoder(w).Encode(map[string]interface{}{"data": payload})
 }

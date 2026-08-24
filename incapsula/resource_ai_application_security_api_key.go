@@ -13,18 +13,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAiFirewallApiKey() *schema.Resource {
+func resourceAiApplicationSecurityApiKey() *schema.Resource {
 	return &schema.Resource{
-		CreateContext: resourceAiFirewallApiKeyCreate,
-		ReadContext:   resourceAiFirewallApiKeyRead,
-		DeleteContext: resourceAiFirewallApiKeyDelete,
+		CreateContext: resourceAiApplicationSecurityApiKeyCreate,
+		ReadContext:   resourceAiApplicationSecurityApiKeyRead,
+		DeleteContext: resourceAiApplicationSecurityApiKeyDelete,
 		// No UpdateContext: only name is settable and the backend has no update endpoint,
 		// so every input is ForceNew.
 		Importer: &schema.ResourceImporter{
-			StateContext: resourceAiFirewallApiKeyImport,
+			StateContext: resourceAiApplicationSecurityApiKeyImport,
 		},
 
-		Description: "Manages an AI Firewall API key for an application. The plaintext key is " +
+		Description: "Manages an AI Application Security API key for an application. The plaintext key is " +
 			"returned only once, on create, in the sensitive api_key attribute and cannot be " +
 			"recovered afterward (it is empty after import). All inputs are immutable.",
 
@@ -38,7 +38,7 @@ func resourceAiFirewallApiKey() *schema.Resource {
 			},
 			"application_id": {
 				Type:         schema.TypeString,
-				Description:  "The UUID of the AI Firewall application this API key belongs to.",
+				Description:  "The UUID of the AI Application Security application this API key belongs to.",
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.IsUUID,
@@ -68,43 +68,43 @@ func resourceAiFirewallApiKey() *schema.Resource {
 	}
 }
 
-func resourceAiFirewallApiKeyCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceAiApplicationSecurityApiKeyCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	accountID := d.Get("account_id").(int)
 	applicationID := d.Get("application_id").(string)
 
-	req := &AiFirewallApiKeyRequest{
+	req := &AiApplicationSecurityApiKeyRequest{
 		Name: d.Get("name").(string),
 	}
 
-	created, err := client.CreateAiFirewallApiKey(accountID, applicationID, req)
+	created, err := client.CreateAiApplicationSecurityApiKey(accountID, applicationID, req)
 	if err != nil {
-		return diag.Errorf("Failed to create AI Firewall API key for application %s: %s", applicationID, err)
+		return diag.Errorf("Failed to create AI Application Security API key for application %s: %s", applicationID, err)
 	}
 
 	// The plaintext key is available only in this response; persist it now — Read never touches it.
 	d.Set("api_key", created.FullKey)
 	d.SetId(strconv.FormatInt(created.ApiKey.Id, 10))
-	log.Printf("[INFO] Created AI Firewall API key with ID: %d", created.ApiKey.Id)
+	log.Printf("[INFO] Created AI Application Security API key with ID: %d", created.ApiKey.Id)
 
-	return resourceAiFirewallApiKeyRead(ctx, d, m)
+	return resourceAiApplicationSecurityApiKeyRead(ctx, d, m)
 }
 
-func resourceAiFirewallApiKeyRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceAiApplicationSecurityApiKeyRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	accountID := d.Get("account_id").(int)
 
 	apiKeyID, err := strconv.ParseInt(d.Id(), 10, 64)
 	if err != nil {
-		return diag.Errorf("Invalid AI Firewall API key ID %q: %s", d.Id(), err)
+		return diag.Errorf("Invalid AI Application Security API key ID %q: %s", d.Id(), err)
 	}
 
-	apiKey, err := client.GetAiFirewallApiKey(accountID, apiKeyID)
+	apiKey, err := client.GetAiApplicationSecurityApiKey(accountID, apiKeyID)
 	if err != nil {
-		return diag.Errorf("Failed to read AI Firewall API key %d: %s", apiKeyID, err)
+		return diag.Errorf("Failed to read AI Application Security API key %d: %s", apiKeyID, err)
 	}
 	if apiKey == nil {
-		log.Printf("[INFO] AI Firewall API key %d not found, removing from state", apiKeyID)
+		log.Printf("[INFO] AI Application Security API key %d not found, removing from state", apiKeyID)
 		d.SetId("")
 		return nil
 	}
@@ -121,25 +121,25 @@ func resourceAiFirewallApiKeyRead(ctx context.Context, d *schema.ResourceData, m
 	return nil
 }
 
-func resourceAiFirewallApiKeyDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceAiApplicationSecurityApiKeyDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Client)
 	accountID := d.Get("account_id").(int)
 	applicationID := d.Get("application_id").(string)
 
 	apiKeyID, err := strconv.ParseInt(d.Id(), 10, 64)
 	if err != nil {
-		return diag.Errorf("Invalid AI Firewall API key ID %q: %s", d.Id(), err)
+		return diag.Errorf("Invalid AI Application Security API key ID %q: %s", d.Id(), err)
 	}
 
-	if err := client.DeleteAiFirewallApiKey(accountID, applicationID, apiKeyID); err != nil {
-		return diag.Errorf("Failed to delete AI Firewall API key %d: %s", apiKeyID, err)
+	if err := client.DeleteAiApplicationSecurityApiKey(accountID, applicationID, apiKeyID); err != nil {
+		return diag.Errorf("Failed to delete AI Application Security API key %d: %s", apiKeyID, err)
 	}
 
 	d.SetId("")
 	return nil
 }
 
-func resourceAiFirewallApiKeyImport(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func resourceAiApplicationSecurityApiKeyImport(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 	raw := strings.TrimSpace(d.Id())
 	if raw == "" {
 		return nil, fmt.Errorf("expected import ID to be '<api_key_id>' or '<account_id>/<api_key_id>'")

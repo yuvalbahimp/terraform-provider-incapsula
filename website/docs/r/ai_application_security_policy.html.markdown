@@ -1,73 +1,73 @@
 ---
-subcategory: "AI Firewall"
+subcategory: "AI Application Security"
 layout: "incapsula"
-page_title: "incapsula_ai_firewall_policy"
+page_title: "incapsula_ai_application_security_policy"
 description: |-
-  Provides an Imperva AI Firewall policy resource.
+  Provides an Imperva AI Application Security policy resource.
 ---
 
-# incapsula_ai_firewall_policy
+# incapsula_ai_application_security_policy
 
-Provides an Imperva AI Firewall policy resource.
+Provides an Imperva AI Application Security policy resource.
 
-A policy holds a set of guardians that inspect traffic for an AI Firewall
-application. Each guardian runs in a specific phase - `PROMPT` (the request sent to
+A policy holds a set of guardrails that inspect traffic for an AI Application Security
+application. Each guardrail runs in a specific phase - `PROMPT` (the request sent to
 the model) or `RESPONSE` (the model's reply) - and enforces an action (`BLOCK`,
 `ALERT`, or `MASK`) when it triggers.
 
-A policy is a child of an [`incapsula_ai_firewall_application`](ai_firewall_application.html.markdown);
+A policy is a child of an [`incapsula_ai_application_security_application`](ai_application_security_application.html.markdown);
 the backend allows a single policy per application.
 
-~> **Required guardian sets.** The backend enforces a *minimum* set of guardians per
-deployment type and phase. A policy that omits any required guardian is rejected at
-apply time with an `Invalid guardian set for '<type>' deployment in '<phase>' phase`
-error listing the missing guardians. See
-[Required guardians by deployment type](#required-guardians-by-deployment-type) below.
+~> **Required guardrail sets.** The backend enforces a *minimum* set of guardrails per
+deployment type and phase. A policy that omits any required guardrail is rejected at
+apply time with an `Invalid guardrail set for '<type>' deployment in '<phase>' phase`
+error listing the missing guardrails. See
+[Required guardrails by deployment type](#required-guardrails-by-deployment-type) below.
 
 ## Example Usage
 
 The example below is a complete `SDK` policy: it includes the full required
-guardian set for both phases. For `API` and `EDGE` the `RESPONSE` phase requires
-fewer guardians (see the table below) - drop the `MODERATION` and
-`SYSTEM_PROMPT_LEAK` guardians for those types.
+guardrail set for both phases. For `API` and `EDGE` the `RESPONSE` phase requires
+fewer guardrails (see the table below) - drop the `MODERATION` and
+`SYSTEM_PROMPT_LEAK` guardrails for those types.
 
 ```hcl
-resource "incapsula_ai_firewall_application" "sdk_app" {
+resource "incapsula_ai_application_security_application" "sdk_app" {
   account_id       = 1234567
   name             = "my-sdk-app"
   application_type = "SDK"
   region           = "US"
 }
 
-resource "incapsula_ai_firewall_policy" "sdk_policy" {
+resource "incapsula_ai_application_security_policy" "sdk_policy" {
   account_id     = 1234567
-  application_id = incapsula_ai_firewall_application.sdk_app.id
+  application_id = incapsula_ai_application_security_application.sdk_app.id
   name           = "default-policy"
   active         = true
 
   # --- PROMPT phase: SDK / API / EDGE all require these four ---
-  guardian {
+  guardrail {
     type   = "PROMPT_INJECTION"
     phase  = "PROMPT"
     mode   = "BLOCK"
     config = jsonencode({
       threshold = 0.8
-      message   = "Your request was blocked by the AI firewall."
+      message   = "Your request was blocked by the AI Application Security."
     })
   }
 
-  guardian {
+  guardrail {
     type   = "ZERO_SHOT_CLASSIFICATION"
     phase  = "PROMPT"
     mode   = "BLOCK"
     config = jsonencode({
       threshold  = 0.85
       categories = ["finance", "legal"]
-      message    = "Your request was blocked by the AI firewall."
+      message    = "Your request was blocked by the AI Application Security."
     })
   }
 
-  guardian {
+  guardrail {
     type   = "PII_STATIC"
     phase  = "PROMPT"
     mode   = "ALERT"
@@ -76,7 +76,7 @@ resource "incapsula_ai_firewall_policy" "sdk_policy" {
     })
   }
 
-  guardian {
+  guardrail {
     type   = "RATE_LIMIT"
     phase  = "PROMPT"
     mode   = "BLOCK"
@@ -89,7 +89,7 @@ resource "incapsula_ai_firewall_policy" "sdk_policy" {
   }
 
   # --- RESPONSE phase: SDK requires all five (API / EDGE require only the first three) ---
-  guardian {
+  guardrail {
     type   = "ZERO_SHOT_CLASSIFICATION"
     phase  = "RESPONSE"
     mode   = "BLOCK"
@@ -99,7 +99,7 @@ resource "incapsula_ai_firewall_policy" "sdk_policy" {
     })
   }
 
-  guardian {
+  guardrail {
     type   = "PII_STATIC"
     phase  = "RESPONSE"
     mode   = "BLOCK"
@@ -109,7 +109,7 @@ resource "incapsula_ai_firewall_policy" "sdk_policy" {
     })
   }
 
-  guardian {
+  guardrail {
     type   = "RATE_LIMIT"
     phase  = "RESPONSE"
     mode   = "ALERT"
@@ -121,14 +121,14 @@ resource "incapsula_ai_firewall_policy" "sdk_policy" {
   }
 
   # SDK only:
-  guardian {
+  guardrail {
     type   = "MODERATION"
     phase  = "RESPONSE"
     mode   = "ALERT"
     config = jsonencode({ threshold = 0.8 })
   }
 
-  guardian {
+  guardrail {
     type  = "SYSTEM_PROMPT_LEAK"
     phase = "RESPONSE"
     mode  = "BLOCK"
@@ -141,20 +141,20 @@ resource "incapsula_ai_firewall_policy" "sdk_policy" {
 The following arguments are supported:
 
 * `account_id` - (Optional) Numeric identifier of the account that owns the application. Defaults to the account of the API credentials when omitted. Cannot be changed after the resource is created.
-* `application_id` - (Required) UUID of the AI Firewall application this policy belongs to. Cannot be changed after the resource is created.
+* `application_id` - (Required) UUID of the AI Application Security application this policy belongs to. Cannot be changed after the resource is created.
 * `name` - (Required) Name of the policy. 1-100 characters.
 * `description` - (Optional) Description of the policy. Up to 500 characters.
 * `active` - (Optional) Whether the policy is active. Default: `true`.
-* `guardian` - (Required) One or more guardian blocks (at least one). Each block supports:
-  * `type` - (Required) Guardian type. One of `PROMPT_INJECTION`, `PII_STATIC`, `MODERATION`, `ZERO_SHOT_CLASSIFICATION`, `RATE_LIMIT`, `SYSTEM_PROMPT_LEAK`.
-  * `phase` - (Required) Phase the guardian runs in. One of `PROMPT`, `RESPONSE`. The valid phases depend on `type` (see below).
+* `guardrail` - (Required) One or more guardrail blocks (at least one). Each block supports:
+  * `type` - (Required) Guardrail type. One of `PROMPT_INJECTION`, `PII_STATIC`, `MODERATION`, `ZERO_SHOT_CLASSIFICATION`, `RATE_LIMIT`, `SYSTEM_PROMPT_LEAK`.
+  * `phase` - (Required) Phase the guardrail runs in. One of `PROMPT`, `RESPONSE`. The valid phases depend on `type` (see below).
   * `mode` - (Required) Enforcement mode. One of `BLOCK`, `ALERT`, `MASK`.
-  * `active` - (Optional) Whether this guardian is active. Default: `true`.
-  * `config` - (Optional) Guardian-specific configuration as a JSON-encoded object. Default: `"{}"`. Use `jsonencode({...})`. See [Guardian config reference](#guardian-config-reference) for the fields each type accepts. Do **not** set a `type` key inside `config` - the provider injects the guardian's `type` automatically.
+  * `active` - (Optional) Whether this guardrail is active. Default: `true`.
+  * `config` - (Optional) Guardrail-specific configuration as a JSON-encoded object. Default: `"{}"`. Use `jsonencode({...})`. See [Guardrail config reference](#guardrail-config-reference) for the fields each type accepts. Do **not** set a `type` key inside `config` - the provider injects the guardrail's `type` automatically.
 
-### Guardian type / phase compatibility
+### Guardrail type / phase compatibility
 
-The valid `phase` values are constrained by the guardian `type`; an invalid
+The valid `phase` values are constrained by the guardrail `type`; an invalid
 combination is rejected at plan time:
 
 | Type | Allowed phases |
@@ -166,11 +166,11 @@ combination is rejected at plan time:
 | `RATE_LIMIT` | `PROMPT`, `RESPONSE` |
 | `ZERO_SHOT_CLASSIFICATION` | `PROMPT`, `RESPONSE` |
 
-### Required guardians by deployment type
+### Required guardrails by deployment type
 
 In addition to the phase rules above, the backend requires a *complete* set of
-guardians for each phase, and the required set depends on the application's
-`application_type`. Include every guardian listed for your deployment type or the
+guardrails for each phase, and the required set depends on the application's
+`application_type`. Include every guardrail listed for your deployment type or the
 apply fails.
 
 | `application_type` | Required in `PROMPT` phase | Required in `RESPONSE` phase |
@@ -179,17 +179,17 @@ apply fails.
 | `API` | `PROMPT_INJECTION`, `ZERO_SHOT_CLASSIFICATION`, `PII_STATIC`, `RATE_LIMIT` | `ZERO_SHOT_CLASSIFICATION`, `PII_STATIC`, `RATE_LIMIT` |
 | `EDGE` | `PROMPT_INJECTION`, `ZERO_SHOT_CLASSIFICATION`, `PII_STATIC`, `RATE_LIMIT` | `ZERO_SHOT_CLASSIFICATION`, `PII_STATIC`, `RATE_LIMIT` |
 
--> A guardian may be present but disabled by setting `active = false`; it still
+-> A guardrail may be present but disabled by setting `active = false`; it still
 counts toward the required set. This lets you satisfy the requirement while keeping
-individual guardians switched off.
+individual guardrails switched off.
 
-### Guardian config reference
+### Guardrail config reference
 
 The `config` object is a polymorphic structure whose accepted fields depend on the
-guardian `type`. All types accept these **base** fields:
+guardrail `type`. All types accept these **base** fields:
 
-* `message` - (Optional) Custom message returned/logged when the guardian triggers.
-* `exceptions` - (Optional) List of exception objects, each `{ id = "...", sentence = "..." }`, that suppress the guardian for specific phrases.
+* `message` - (Optional) Custom message returned/logged when the guardrail triggers.
+* `exceptions` - (Optional) List of exception objects, each `{ id = "...", sentence = "..." }`, that suppress the guardrail for specific phrases.
 
 Type-specific fields:
 
@@ -210,11 +210,11 @@ The following attributes are exported:
 
 ## Import
 
-AI Firewall policy can be imported using its `policy_id`, optionally prefixed with the `account_id`:
+AI Application Security policy can be imported using its `policy_id`, optionally prefixed with the `account_id`:
 
 ```
-$ terraform import incapsula_ai_firewall_policy.example 3f2504e0-4f89-41d3-9a0c-0305e82c3301
-$ terraform import incapsula_ai_firewall_policy.example 1234567/3f2504e0-4f89-41d3-9a0c-0305e82c3301
+$ terraform import incapsula_ai_application_security_policy.example 3f2504e0-4f89-41d3-9a0c-0305e82c3301
+$ terraform import incapsula_ai_application_security_policy.example 1234567/3f2504e0-4f89-41d3-9a0c-0305e82c3301
 ```
 
 When the `account_id` is omitted from the import ID it is taken from the account of the API credentials.

@@ -1,23 +1,23 @@
 ---
-subcategory: "AI Firewall"
+subcategory: "AI Application Security"
 layout: "incapsula"
-page_title: "incapsula_ai_firewall_api_key"
+page_title: "incapsula_ai_application_security_api_key"
 description: |-
-  Provides an Imperva AI Firewall API key resource.
+  Provides an Imperva AI Application Security API key resource.
 ---
 
-# incapsula_ai_firewall_api_key
+# incapsula_ai_application_security_api_key
 
-Provides an Imperva AI Firewall API key resource.
+Provides an Imperva AI Application Security API key resource.
 
-An API key authenticates client traffic to an AI Firewall application. The
+An API key authenticates client traffic to an AI Application Security application. The
 plaintext key is returned **only once**, at creation time, in the sensitive
 `api_key` attribute; it cannot be recovered afterward. Store it securely (for
 example in Terraform state encrypted at rest, or pipe it straight into a secret
 manager). After a `terraform import` the `api_key` attribute is empty because the
 plaintext value is no longer retrievable from the backend.
 
-An API key is a child of an [`incapsula_ai_firewall_application`](ai_firewall_application.html.markdown).
+An API key is a child of an [`incapsula_ai_application_security_application`](ai_application_security_application.html.markdown).
 An account may hold at most **5** API keys; creation fails once that limit is
 reached. All arguments are immutable - changing any of them forces a new resource
 (the backend has no update endpoint for API keys).
@@ -25,21 +25,21 @@ reached. All arguments are immutable - changing any of them forces a new resourc
 ## Example Usage
 
 ```hcl
-resource "incapsula_ai_firewall_application" "app" {
+resource "incapsula_ai_application_security_application" "app" {
   account_id       = 1234567
   name             = "my-api-app"
   application_type = "API"
   region           = "US"
 }
 
-resource "incapsula_ai_firewall_api_key" "key" {
+resource "incapsula_ai_application_security_api_key" "key" {
   account_id     = 1234567
-  application_id = incapsula_ai_firewall_application.app.id
+  application_id = incapsula_ai_application_security_application.app.id
   name           = "ci-pipeline-key"
 }
 
-output "ai_firewall_api_key" {
-  value     = incapsula_ai_firewall_api_key.key.api_key
+output "ai_application_security_api_key" {
+  value     = incapsula_ai_application_security_api_key.key.api_key
   sensitive = true
 }
 ```
@@ -49,7 +49,7 @@ output "ai_firewall_api_key" {
 The following arguments are supported:
 
 * `account_id` - (Optional) Numeric identifier of the account that owns the application. Defaults to the account of the API credentials when omitted. Cannot be changed after the resource is created.
-* `application_id` - (Required) UUID of the AI Firewall application this API key belongs to. Cannot be changed after the resource is created.
+* `application_id` - (Required) UUID of the AI Application Security application this API key belongs to. Cannot be changed after the resource is created.
 * `name` - (Required) Name of the API key. 1-50 characters; alphanumeric, underscore (`_`) or hyphen (`-`). Cannot be changed after the resource is created.
 
 ## Attributes Reference
@@ -62,11 +62,11 @@ The following attributes are exported:
 
 ## Import
 
-AI Firewall API key can be imported using its `api_key_id`, optionally prefixed with the `account_id`:
+AI Application Security API key can be imported using its `api_key_id`, optionally prefixed with the `account_id`:
 
 ```
-$ terraform import incapsula_ai_firewall_api_key.example 42
-$ terraform import incapsula_ai_firewall_api_key.example 1234567/42
+$ terraform import incapsula_ai_application_security_api_key.example 42
+$ terraform import incapsula_ai_application_security_api_key.example 1234567/42
 ```
 
 When the `account_id` is omitted from the import ID it is taken from the account of the

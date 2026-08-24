@@ -1,20 +1,20 @@
 ---
-subcategory: "AI Firewall"
+subcategory: "AI Application Security"
 layout: "incapsula"
-page_title: "incapsula_ai_firewall_application"
+page_title: "incapsula_ai_application_security_application"
 description: |-
-  Provides an Imperva AI Firewall application resource.
+  Provides an Imperva AI Application Security application resource.
 ---
 
-# incapsula_ai_firewall_application
+# incapsula_ai_application_security_application
 
-Provides an Imperva AI Firewall application resource.
+Provides an Imperva AI Application Security application resource.
 
-An AI Firewall application represents a protected AI/LLM endpoint. The deployment
+An AI Application Security application represents a protected AI/LLM endpoint. The deployment
 type (`application_type`) determines how traffic reaches the application:
 
-* `SDK` - traffic is inspected via the AI Firewall SDK integrated into your application.
-* `API` - traffic is inspected via the AI Firewall API.
+* `SDK` - traffic is inspected via the Inline Reverse Proxy integrated into your application.
+* `API` - traffic is inspected via the AI Application Security API.
 * `EDGE` - traffic is inspected inline at the edge. This type requires a
   `configuration` block describing how to extract prompts and responses.
 
@@ -23,7 +23,7 @@ type (`application_type`) determines how traffic reaches the application:
 ### SDK Application
 
 ```hcl
-resource "incapsula_ai_firewall_application" "sdk_app" {
+resource "incapsula_ai_application_security_application" "sdk_app" {
   account_id       = 1234567
   name             = "my-sdk-app"
   application_type = "SDK"
@@ -34,7 +34,7 @@ resource "incapsula_ai_firewall_application" "sdk_app" {
 ### API Application
 
 ```hcl
-resource "incapsula_ai_firewall_application" "api_app" {
+resource "incapsula_ai_application_security_application" "api_app" {
   account_id       = 1234567
   name             = "my-api-app"
   application_type = "API"
@@ -47,7 +47,7 @@ resource "incapsula_ai_firewall_application" "api_app" {
 An `EDGE` application requires a `configuration` block:
 
 ```hcl
-resource "incapsula_ai_firewall_application" "edge_app" {
+resource "incapsula_ai_application_security_application" "edge_app" {
   account_id       = 1234567
   name             = "my-edge-app"
   application_type = "EDGE"
@@ -89,7 +89,7 @@ reason at runtime.
 The following arguments are supported:
 
 * `account_id` - (Optional) Numeric identifier of the account to operate on. Defaults to the account of the API credentials when omitted. Cannot be changed after the resource is created.
-* `name` - (Required) Name of the AI Firewall application.
+* `name` - (Required) Name of the AI Application Security application.
 * `application_type` - (Required) Deployment type of the application. One of `SDK`, `EDGE`, `API`. Cannot be changed after the resource is created.
 * `region` - (Optional) Data region of the application. One of `US`, `EU`, `AU`, `APAC`. If omitted, the application inherits the account's data region on create (the value is then stored as a computed attribute). Account-region inheritance is create-only: removing this attribute after it has been set does not revert to the account default - the last applied value is kept and the region is left unchanged. Set the attribute explicitly to move an application between regions.
 * `configuration` - (Optional) Application configuration block. **Required** when `application_type = "EDGE"`; **not supported** for `SDK` or `API` application types. Supports a single block with the following arguments:
@@ -114,15 +114,15 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - UUID of the application. Used as the import key and as `application_id` on the AI Firewall policy and api-key resources.
+* `id` - UUID of the application. Used as the import key and as `application_id` on the AI Application Security policy and api-key resources.
 
 ## Import
 
-AI Firewall application can be imported using its `application_id`, optionally prefixed with the `account_id`:
+AI Application Security application can be imported using its `application_id`, optionally prefixed with the `account_id`:
 
 ```
-$ terraform import incapsula_ai_firewall_application.example 3f2504e0-4f89-41d3-9a0c-0305e82c3301
-$ terraform import incapsula_ai_firewall_application.example 1234567/3f2504e0-4f89-41d3-9a0c-0305e82c3301
+$ terraform import incapsula_ai_application_security_application.example 3f2504e0-4f89-41d3-9a0c-0305e82c3301
+$ terraform import incapsula_ai_application_security_application.example 1234567/3f2504e0-4f89-41d3-9a0c-0305e82c3301
 ```
 
 When the `account_id` is omitted from the import ID it is taken from the account of the API credentials.
