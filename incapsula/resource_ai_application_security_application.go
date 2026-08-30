@@ -278,7 +278,9 @@ func resourceAiApplicationSecurityApplicationRead(ctx context.Context, d *schema
 		return nil
 	}
 
-	d.Set("account_id", int(app.AccountId))
+	if app.AccountId != 0 {
+		d.Set("account_id", int(app.AccountId))
+	}
 	d.Set("name", app.Name)
 	d.Set("application_type", app.ApplicationType)
 	d.Set("region", app.Region)

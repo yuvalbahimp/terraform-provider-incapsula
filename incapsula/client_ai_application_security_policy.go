@@ -36,7 +36,7 @@ type AiApplicationSecurityGuardrail struct {
 // desired state, a single PATCH covers field-only, guardrail-only, and combined changes.
 type AiApplicationSecurityPolicyRequest struct {
 	Name        string                           `json:"name"`
-	Description string                           `json:"description,omitempty"`
+PR feedback	Description string                           `json:"description"`
 	Active      bool                             `json:"active"`
 	Request     []AiApplicationSecurityGuardrail `json:"request"`
 	Response    []AiApplicationSecurityGuardrail `json:"response"`

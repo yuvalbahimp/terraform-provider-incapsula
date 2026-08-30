@@ -236,7 +236,9 @@ func resourceAiApplicationSecurityPolicyRead(ctx context.Context, d *schema.Reso
 		return nil
 	}
 
-	d.Set("account_id", int(policy.AccountId))
+	if policy.AccountId != 0 {
+		d.Set("account_id", int(policy.AccountId))
+	}
 	d.Set("application_id", policy.ApplicationId)
 	d.Set("name", policy.Name)
 	d.Set("description", policy.Description)
