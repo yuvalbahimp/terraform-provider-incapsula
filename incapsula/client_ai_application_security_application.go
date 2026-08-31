@@ -30,7 +30,7 @@ type AiApplicationSecurityApplicationConfig struct {
 	Path                     string                                  `json:"path,omitempty"`
 	ContentType              string                                  `json:"contentType,omitempty"`
 	PromptLocation           string                                  `json:"promptLocation,omitempty"`
-	BlockedResponseStructure string                                  `json:"blocked_response_structure,omitempty"`
+	BlockedResponseStructure string                                  `json:"blockedResponseStructure,omitempty"`
 	IsStreaming              bool                                    `json:"isStreaming"`
 	Request                  *AiApplicationSecurityStreamingRequest  `json:"request,omitempty"`
 	Response                 *AiApplicationSecurityStreamingResponse `json:"response,omitempty"`
