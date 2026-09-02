@@ -206,10 +206,18 @@ func flattenAiApplicationSecurityApplicationConfig(config *AiApplicationSecurity
 		return nil
 	}
 
+	// content_type has a non-empty schema Default ("application/json"); the backend tags
+	// contentType omitempty. Fall back to the default when it comes back empty so the Default
+	// doesn't re-apply on the next plan and cause a perpetual in-place update.
+	contentType := config.ContentType
+	if contentType == "" {
+		contentType = "application/json"
+	}
+
 	result := map[string]interface{}{
 		"site_id":                    int(config.SiteId),
 		"path":                       config.Path,
-		"content_type":               config.ContentType,
+		"content_type":               contentType,
 		"prompt_location":            config.PromptLocation,
 		"blocked_response_structure": config.BlockedResponseStructure,
 		"is_streaming":               config.IsStreaming,

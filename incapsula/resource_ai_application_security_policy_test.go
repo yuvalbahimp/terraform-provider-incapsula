@@ -65,6 +65,38 @@ func TestAccIncapsulaAiApplicationSecurityPolicyInvalidPhase(t *testing.T) {
 	})
 }
 
+// TestAiApplicationSecurityGuardrailHashIgnoresEmbeddedType is a unit-level regression test for the
+// guardrail set hash. The backend requires a "type" discriminator inside the config JSON on write and
+// always returns it on read; flattenAiApplicationSecurityGuardrail strips it so state matches config.
+// A user who redundantly embeds "type" in their config JSON must therefore hash identically to the
+// stripped read-back form — otherwise the set element shows a perpetual remove/add. This is enforced
+// by normalizeAiApplicationSecurityGuardrailConfig dropping "type".
+func TestAiApplicationSecurityGuardrailHashIgnoresEmbeddedType(t *testing.T) {
+	withEmbeddedType := map[string]interface{}{
+		"type":   "RATE_LIMIT",
+		"phase":  "PROMPT",
+		"mode":   "BLOCK",
+		"active": true,
+		"config": `{"type":"RATE_LIMIT","threshold":5}`,
+	}
+	strippedType := map[string]interface{}{
+		"type":   "RATE_LIMIT",
+		"phase":  "PROMPT",
+		"mode":   "BLOCK",
+		"active": true,
+		"config": `{"threshold":5}`,
+	}
+
+	if h1, h2 := aiApplicationSecurityGuardrailHash(withEmbeddedType), aiApplicationSecurityGuardrailHash(strippedType); h1 != h2 {
+		t.Errorf("guardrail hash differs with embedded type (%d) vs stripped (%d); must be equal to avoid a perpetual diff", h1, h2)
+	}
+
+	// The normalizer must drop the embedded discriminator directly.
+	if got := normalizeAiApplicationSecurityGuardrailConfig(`{"type":"RATE_LIMIT","threshold":5}`); got != `{"threshold":5}` {
+		t.Errorf("normalize did not strip embedded type: got %q, want {\"threshold\":5}", got)
+	}
+}
+
 // TestAccIncapsulaAiApplicationSecurityPolicyConfigJSONIdempotent guards against the TypeSet + JSON
 // config hashing trap: a guardrail config written with keys in non-sorted order must not
 // produce a perpetual diff. The backend (and flatten) round-trip config with sorted keys,

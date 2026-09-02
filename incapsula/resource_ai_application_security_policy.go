@@ -399,6 +399,12 @@ func normalizeAiApplicationSecurityGuardrailConfig(v interface{}) string {
 	if err := json.Unmarshal([]byte(s), &parsed); err != nil {
 		return s
 	}
+	// The "type" discriminator is injected on write and stripped on read (see
+	// flattenAiApplicationSecurityGuardrail). Drop it here too so a user who embeds "type" in
+	// their config JSON hashes identically to the read-back form, avoiding a perpetual diff.
+	if m, ok := parsed.(map[string]interface{}); ok {
+		delete(m, "type")
+	}
 	canonical, err := json.Marshal(parsed)
 	if err != nil {
 		return s

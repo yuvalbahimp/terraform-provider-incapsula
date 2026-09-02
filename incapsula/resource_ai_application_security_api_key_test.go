@@ -1,7 +1,10 @@
 package incapsula
 
 import (
+	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"testing"
 
@@ -44,6 +47,47 @@ func TestAccIncapsulaAiApplicationSecurityApiKeyBasic(t *testing.T) {
 			},
 		},
 	})
+}
+
+// TestAiApplicationSecurityApiKeyReadPreservesApplicationIDWhenOmitted is a unit-level regression test
+// for the ForceNew application_id guard in Read. The account-level list DTO tags applicationId
+// omitempty and the backend can legitimately drop it, so Read must NOT overwrite the configured
+// UUID with an empty string — otherwise the next plan would schedule a destroy/recreate whose
+// Delete targets an empty application path.
+func TestAiApplicationSecurityApiKeyReadPreservesApplicationIDWhenOmitted(t *testing.T) {
+	restore := withShortRetries()
+	defer restore()
+
+	const configuredAppID = "11111111-1111-1111-1111-111111111111"
+
+	// The list returns the key (id 42) but omits applicationId entirely.
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		rw.WriteHeader(200)
+		rw.Write([]byte(`{"data":{"apiKeys":[{"id":42,"name":"my-key","accountId":55,"active":true}],"totalCount":1}}`))
+	}))
+	defer server.Close()
+
+	client := &Client{config: &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}, httpClient: &http.Client{}}
+
+	d := resourceAiApplicationSecurityApiKey().TestResourceData()
+	d.SetId("42")
+	d.Set("account_id", 55)
+	d.Set("application_id", configuredAppID)
+
+	if diags := resourceAiApplicationSecurityApiKeyRead(context.Background(), d, client); diags.HasError() {
+		t.Fatalf("Read returned error: %+v", diags)
+	}
+
+	if got := d.Get("application_id").(string); got != configuredAppID {
+		t.Errorf("application_id was overwritten to %q; the configured UUID %q must be preserved when the list omits applicationId", got, configuredAppID)
+	}
+	// Sanity: the rest of the response is still applied.
+	if got := d.Get("name").(string); got != "my-key" {
+		t.Errorf("name not set from read: got %q, want my-key", got)
+	}
+	if got := d.Get("active").(bool); !got {
+		t.Errorf("active not set from read: got %v, want true", got)
+	}
 }
 
 func testAccAiApplicationSecurityApiKeyConfig(name string) string {

@@ -114,7 +114,12 @@ func resourceAiApplicationSecurityApiKeyRead(ctx context.Context, d *schema.Reso
 	if apiKey.AccountId != 0 {
 		d.Set("account_id", int(apiKey.AccountId))
 	}
-	d.Set("application_id", apiKey.ApplicationId)
+	// application_id is Required + ForceNew. The account-level list DTO tags applicationId
+	// omitempty, so guard against an empty value overwriting the configured UUID — otherwise a
+	// missing field would trigger a destroy/recreate whose Delete targets an empty path.
+	if apiKey.ApplicationId != "" {
+		d.Set("application_id", apiKey.ApplicationId)
+	}
 	d.Set("name", apiKey.Name)
 	d.Set("active", apiKey.Active)
 

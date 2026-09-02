@@ -1,7 +1,10 @@
 package incapsula
 
 import (
+	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"regexp"
 	"strconv"
@@ -44,6 +47,39 @@ func aiApplicationSecurityTestSiteID() int {
 // TestAccIncapsulaAiApplicationSecurityApplicationBasic exercises the full API-type resource
 // lifecycle against the mock server: create -> read -> update (name + region via
 // PATCH) -> import (ImportStateVerify) -> destroy.
+// TestAiApplicationSecurityApplicationReadDefaultsContentTypeWhenEmpty is a unit-level regression test
+// for the content_type fallback in Read. The backend applies no server-side default for contentType
+// and tags it omitempty, so an EDGE app can read back with it absent. Without the fallback, the
+// schema Default ("application/json") would re-apply on the next plan and cause a perpetual in-place
+// update; Read must resolve the empty value to the default so state matches config.
+func TestAiApplicationSecurityApplicationReadDefaultsContentTypeWhenEmpty(t *testing.T) {
+	restore := withShortRetries()
+	defer restore()
+
+	const appID = "app-123"
+
+	// EDGE app whose configuration omits contentType.
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		rw.WriteHeader(200)
+		rw.Write([]byte(`{"data":[{"applicationId":"app-123","name":"edge-app","accountId":55,"region":"US","applicationType":"EDGE","configuration":{"siteId":100,"path":"/api"}}]}`))
+	}))
+	defer server.Close()
+
+	client := &Client{config: &Config{APIID: "foo", APIKey: "bar", BaseURLAPI: server.URL}, httpClient: &http.Client{}}
+
+	d := resourceAiApplicationSecurityApplication().TestResourceData()
+	d.SetId(appID)
+	d.Set("account_id", 55)
+
+	if diags := resourceAiApplicationSecurityApplicationRead(context.Background(), d, client); diags.HasError() {
+		t.Fatalf("Read returned error: %+v", diags)
+	}
+
+	if got := d.Get("configuration.0.content_type").(string); got != "application/json" {
+		t.Errorf("content_type not defaulted: got %q, want application/json when the backend omits contentType", got)
+	}
+}
+
 func TestAccIncapsulaAiApplicationSecurityApplicationBasic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
