@@ -93,18 +93,16 @@ func TestAiApplicationSecurityApiKeyReadPreservesApplicationIDWhenOmitted(t *tes
 func testAccAiApplicationSecurityApiKeyConfig(name string) string {
 	return fmt.Sprintf(`
 resource "incapsula_ai_application_security_application" "api_key_app" {
-  account_id       = %d
   name             = "api-key-app"
   application_type = "API"
   region           = "US"
 }
 
 resource "incapsula_ai_application_security_api_key" "test" {
-  account_id     = %d
   application_id = incapsula_ai_application_security_application.api_key_app.id
   name           = "%s"
 }
-`, aiApplicationSecurityTestAccountID(), aiApplicationSecurityTestAccountID(), name)
+`, name)
 }
 
 // aiApplicationSecurityApiKeyImportID resolves the import key (numeric API key ID) for the named
@@ -136,7 +134,8 @@ func testAccCheckAiApplicationSecurityApiKeyExists(name string) resource.TestChe
 
 		client := testAccProvider.Meta().(*Client)
 
-		apiKey, err := client.GetAiApplicationSecurityApiKey(aiApplicationSecurityTestAccountID(), apiKeyID)
+		accountID, _ := strconv.Atoi(rs.Primary.Attributes["account_id"])
+		apiKey, err := client.GetAiApplicationSecurityApiKey(accountID, apiKeyID)
 		if err != nil {
 			return fmt.Errorf("Error getting AI Application Security API key: %s", err)
 		}
@@ -164,7 +163,8 @@ func testAccCheckAiApplicationSecurityApiKeyDestroy(s *terraform.State) error {
 			continue
 		}
 
-		apiKey, err := client.GetAiApplicationSecurityApiKey(aiApplicationSecurityTestAccountID(), apiKeyID)
+		accountID, _ := strconv.Atoi(rs.Primary.Attributes["account_id"])
+		apiKey, err := client.GetAiApplicationSecurityApiKey(accountID, apiKeyID)
 		if err == nil && apiKey != nil {
 			return fmt.Errorf("AI Application Security API key still exists: %s", rs.Primary.ID)
 		}

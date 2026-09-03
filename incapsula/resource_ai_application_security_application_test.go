@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"regexp"
 	"strconv"
 	"testing"
@@ -17,32 +16,6 @@ import (
 const aiApplicationSecurityApplicationApiResourceName = "incapsula_ai_application_security_application.api_test"
 const aiApplicationSecurityApplicationEdgeResourceName = "incapsula_ai_application_security_application.edge_test"
 const aiApplicationSecurityApplicationEdgePartialResourceName = "incapsula_ai_application_security_application.edge_partial"
-
-// aiApplicationSecurityTestAccountID is the account the acceptance tests operate on. It defaults
-// to 1234 (the mock server accepts any account), and is overridable via
-// INCAPSULA_AI_APPLICATION_SECURITY_ACCOUNT_ID when running against a live stage/prod backend where
-// the credentials are scoped to a specific account.
-func aiApplicationSecurityTestAccountID() int {
-	if v := os.Getenv("INCAPSULA_AI_APPLICATION_SECURITY_ACCOUNT_ID"); v != "" {
-		if id, err := strconv.Atoi(v); err == nil {
-			return id
-		}
-	}
-	return 1234
-}
-
-// aiApplicationSecurityTestSiteID is the site the EDGE-type acceptance test attaches to. It defaults
-// to 987654 (the mock server accepts any site), and is overridable via
-// INCAPSULA_AI_APPLICATION_SECURITY_SITE_ID when running against a live backend, which validates that
-// the site exists under the account.
-func aiApplicationSecurityTestSiteID() int {
-	if v := os.Getenv("INCAPSULA_AI_APPLICATION_SECURITY_SITE_ID"); v != "" {
-		if id, err := strconv.Atoi(v); err == nil {
-			return id
-		}
-	}
-	return 987654
-}
 
 // TestAccIncapsulaAiApplicationSecurityApplicationBasic exercises the full API-type resource
 // lifecycle against the mock server: create -> read -> update (name + region via
@@ -129,13 +102,14 @@ func TestAccIncapsulaAiApplicationSecurityApplicationEdge(t *testing.T) {
 		CheckDestroy: testAccCheckAiApplicationSecurityApplicationDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccAiApplicationSecurityApplicationEdgeConfig("edge-app", "/v1/chat/completions"),
+				Config: testAccAiApplicationSecurityApplicationEdgeConfig(t, "edge-app", "/v1/chat/completions"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAiApplicationSecurityApplicationExists(aiApplicationSecurityApplicationEdgeResourceName),
 					resource.TestCheckResourceAttr(aiApplicationSecurityApplicationEdgeResourceName, "name", "edge-app"),
 					resource.TestCheckResourceAttr(aiApplicationSecurityApplicationEdgeResourceName, "application_type", "EDGE"),
 					resource.TestCheckResourceAttr(aiApplicationSecurityApplicationEdgeResourceName, "configuration.#", "1"),
-					resource.TestCheckResourceAttr(aiApplicationSecurityApplicationEdgeResourceName, "configuration.0.site_id", strconv.Itoa(aiApplicationSecurityTestSiteID())),
+					// site_id is created inline (incapsula_site) and referenced, so compare against it.
+					resource.TestCheckResourceAttrPair(aiApplicationSecurityApplicationEdgeResourceName, "configuration.0.site_id", siteResourceName, "id"),
 					resource.TestCheckResourceAttr(aiApplicationSecurityApplicationEdgeResourceName, "configuration.0.path", "/v1/chat/completions"),
 					resource.TestCheckResourceAttr(aiApplicationSecurityApplicationEdgeResourceName, "configuration.0.is_streaming", "true"),
 					resource.TestCheckResourceAttr(aiApplicationSecurityApplicationEdgeResourceName, "configuration.0.request.#", "1"),
@@ -146,7 +120,7 @@ func TestAccIncapsulaAiApplicationSecurityApplicationEdge(t *testing.T) {
 			},
 			{
 				// Mutate a nested configuration field -> PATCH carrying the whole config block.
-				Config: testAccAiApplicationSecurityApplicationEdgeConfig("edge-app", "/v2/chat/completions"),
+				Config: testAccAiApplicationSecurityApplicationEdgeConfig(t, "edge-app", "/v2/chat/completions"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAiApplicationSecurityApplicationExists(aiApplicationSecurityApplicationEdgeResourceName),
 					resource.TestCheckResourceAttr(aiApplicationSecurityApplicationEdgeResourceName, "configuration.0.path", "/v2/chat/completions"),
@@ -174,7 +148,7 @@ func TestAccIncapsulaAiApplicationSecurityApplicationEdgePartialConfig(t *testin
 		CheckDestroy: testAccCheckAiApplicationSecurityApplicationDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccAiApplicationSecurityApplicationEdgePartialConfig("edge-partial"),
+				Config: testAccAiApplicationSecurityApplicationEdgePartialConfig(t, "edge-partial"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAiApplicationSecurityApplicationExists(aiApplicationSecurityApplicationEdgePartialResourceName),
 					resource.TestCheckResourceAttr(aiApplicationSecurityApplicationEdgePartialResourceName, "configuration.#", "1"),
@@ -220,24 +194,22 @@ func TestAccIncapsulaAiApplicationSecurityApplicationConfigValidation(t *testing
 func testAccAiApplicationSecurityApplicationConfig(name, region string) string {
 	return fmt.Sprintf(`
 resource "incapsula_ai_application_security_application" "api_test" {
-  account_id       = %d
   name             = "%s"
   application_type = "API"
   region           = "%s"
 }
-`, aiApplicationSecurityTestAccountID(), name, region)
+`, name, region)
 }
 
-func testAccAiApplicationSecurityApplicationEdgeConfig(name, path string) string {
-	return fmt.Sprintf(`
+func testAccAiApplicationSecurityApplicationEdgeConfig(t *testing.T, name, path string) string {
+	return testAccCheckIncapsulaSiteConfigBasic(GenerateTestDomain(t)) + fmt.Sprintf(`
 resource "incapsula_ai_application_security_application" "edge_test" {
-  account_id       = %d
   name             = "%s"
   application_type = "EDGE"
   region           = "US"
 
   configuration {
-    site_id                    = %d
+    site_id                    = incapsula_site.testacc-terraform-site.id
     path                       = "%s"
     content_type               = "application/json"
     prompt_location            = "$.messages[-1].content"
@@ -259,21 +231,20 @@ resource "incapsula_ai_application_security_application" "edge_test" {
     }
   }
 }
-`, aiApplicationSecurityTestAccountID(), name, aiApplicationSecurityTestSiteID(), path)
+`, name, path)
 }
 
 // testAccAiApplicationSecurityApplicationEdgePartialConfig builds an EDGE configuration that contains a
 // request{} block but no response{} block.
-func testAccAiApplicationSecurityApplicationEdgePartialConfig(name string) string {
-	return fmt.Sprintf(`
+func testAccAiApplicationSecurityApplicationEdgePartialConfig(t *testing.T, name string) string {
+	return testAccCheckIncapsulaSiteConfigBasic(GenerateTestDomain(t)) + fmt.Sprintf(`
 resource "incapsula_ai_application_security_application" "edge_partial" {
-  account_id       = %d
   name             = "%s"
   application_type = "EDGE"
   region           = "US"
 
   configuration {
-    site_id                    = %d
+    site_id                    = incapsula_site.testacc-terraform-site.id
     path                       = "/v1/chat/completions"
     prompt_location            = "$.messages[-1].content"
     blocked_response_structure = "{\"error\": \"$BLOCKED_MESSAGE\"}"
@@ -285,24 +256,22 @@ resource "incapsula_ai_application_security_application" "edge_partial" {
     }
   }
 }
-`, aiApplicationSecurityTestAccountID(), name, aiApplicationSecurityTestSiteID())
+`, name)
 }
 
 func testAccAiApplicationSecurityApplicationEdgeMissingConfig(name string) string {
 	return fmt.Sprintf(`
 resource "incapsula_ai_application_security_application" "edge_test" {
-  account_id       = %d
   name             = "%s"
   application_type = "EDGE"
   region           = "US"
 }
-`, aiApplicationSecurityTestAccountID(), name)
+`, name)
 }
 
 func testAccAiApplicationSecurityApplicationSdkWithConfig(name string) string {
 	return fmt.Sprintf(`
 resource "incapsula_ai_application_security_application" "sdk_test" {
-  account_id       = %d
   name             = "%s"
   application_type = "SDK"
   region           = "US"
@@ -311,7 +280,7 @@ resource "incapsula_ai_application_security_application" "sdk_test" {
     path = "/v1/chat/completions"
   }
 }
-`, aiApplicationSecurityTestAccountID(), name)
+`, name)
 }
 
 // aiApplicationSecurityApplicationImportID resolves the import key (application UUID) for the
@@ -338,7 +307,8 @@ func testAccCheckAiApplicationSecurityApplicationExists(name string) resource.Te
 
 		client := testAccProvider.Meta().(*Client)
 
-		app, err := client.GetAiApplicationSecurityApplication(aiApplicationSecurityTestAccountID(), rs.Primary.ID)
+		accountID, _ := strconv.Atoi(rs.Primary.Attributes["account_id"])
+		app, err := client.GetAiApplicationSecurityApplication(accountID, rs.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("Error getting AI Application Security application: %s", err)
 		}
@@ -361,7 +331,8 @@ func testAccCheckAiApplicationSecurityApplicationDestroy(s *terraform.State) err
 			continue
 		}
 
-		app, err := client.GetAiApplicationSecurityApplication(aiApplicationSecurityTestAccountID(), rs.Primary.ID)
+		accountID, _ := strconv.Atoi(rs.Primary.Attributes["account_id"])
+		app, err := client.GetAiApplicationSecurityApplication(accountID, rs.Primary.ID)
 		if err == nil && app != nil {
 			return fmt.Errorf("AI Application Security application still exists: %s", rs.Primary.ID)
 		}

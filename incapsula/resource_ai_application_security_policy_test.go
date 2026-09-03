@@ -3,6 +3,7 @@ package incapsula
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -246,14 +247,12 @@ func TestAccIncapsulaAiApplicationSecurityPolicyGuardrailConfigDistinct(t *testi
 func testAccAiApplicationSecurityPolicyConfig(name string, active bool) string {
 	return fmt.Sprintf(`
 resource "incapsula_ai_application_security_application" "policy_app" {
-  account_id       = %d
   name             = "policy-app"
   application_type = "API"
   region           = "US"
 }
 
 resource "incapsula_ai_application_security_policy" "test" {
-  account_id     = %d
   application_id = incapsula_ai_application_security_application.policy_app.id
   name           = "%s"
   active         = %t
@@ -270,7 +269,7 @@ resource "incapsula_ai_application_security_policy" "test" {
     mode  = "ALERT"
   }
 }
-`, aiApplicationSecurityTestAccountID(), aiApplicationSecurityTestAccountID(), name, active)
+`, name, active)
 }
 
 // testAccAiApplicationSecurityPolicyConfigJSONConfig declares a guardrail whose config JSON has multiple
@@ -278,14 +277,12 @@ resource "incapsula_ai_application_security_policy" "test" {
 func testAccAiApplicationSecurityPolicyConfigJSONConfig(name string) string {
 	return fmt.Sprintf(`
 resource "incapsula_ai_application_security_application" "policy_app" {
-  account_id       = %d
   name             = "policy-app"
   application_type = "API"
   region           = "US"
 }
 
 resource "incapsula_ai_application_security_policy" "test" {
-  account_id     = %d
   application_id = incapsula_ai_application_security_application.policy_app.id
   name           = "%s"
 
@@ -296,7 +293,7 @@ resource "incapsula_ai_application_security_policy" "test" {
     config = "{\"z_threshold\":0.9,\"a_enabled\":true}"
   }
 }
-`, aiApplicationSecurityTestAccountID(), aiApplicationSecurityTestAccountID(), name)
+`, name)
 }
 
 // testAccAiApplicationSecurityPolicyGuardrailMutationConfig declares a single PII_STATIC/PROMPT guardrail
@@ -305,14 +302,12 @@ resource "incapsula_ai_application_security_policy" "test" {
 func testAccAiApplicationSecurityPolicyGuardrailMutationConfig(name, mode string, active bool, config string) string {
 	return fmt.Sprintf(`
 resource "incapsula_ai_application_security_application" "policy_app" {
-  account_id       = %d
   name             = "policy-app"
   application_type = "API"
   region           = "US"
 }
 
 resource "incapsula_ai_application_security_policy" "test" {
-  account_id     = %d
   application_id = incapsula_ai_application_security_application.policy_app.id
   name           = "%s"
 
@@ -324,7 +319,7 @@ resource "incapsula_ai_application_security_policy" "test" {
     config = %q
   }
 }
-`, aiApplicationSecurityTestAccountID(), aiApplicationSecurityTestAccountID(), name, mode, active, config)
+`, name, mode, active, config)
 }
 
 // testAccAiApplicationSecurityPolicyOneGuardrailConfig declares a policy with a single guardrail, used to
@@ -332,14 +327,12 @@ resource "incapsula_ai_application_security_policy" "test" {
 func testAccAiApplicationSecurityPolicyOneGuardrailConfig(name string) string {
 	return fmt.Sprintf(`
 resource "incapsula_ai_application_security_application" "policy_app" {
-  account_id       = %d
   name             = "policy-app"
   application_type = "API"
   region           = "US"
 }
 
 resource "incapsula_ai_application_security_policy" "test" {
-  account_id     = %d
   application_id = incapsula_ai_application_security_application.policy_app.id
   name           = "%s"
 
@@ -349,7 +342,7 @@ resource "incapsula_ai_application_security_policy" "test" {
     mode  = "BLOCK"
   }
 }
-`, aiApplicationSecurityTestAccountID(), aiApplicationSecurityTestAccountID(), name)
+`, name)
 }
 
 // testAccAiApplicationSecurityPolicyGuardrailConfigDistinctConfig declares two guardrails that differ ONLY
@@ -359,14 +352,12 @@ resource "incapsula_ai_application_security_policy" "test" {
 func testAccAiApplicationSecurityPolicyGuardrailConfigDistinctConfig(name string) string {
 	return fmt.Sprintf(`
 resource "incapsula_ai_application_security_application" "policy_app" {
-  account_id       = %d
   name             = "policy-app"
   application_type = "API"
   region           = "US"
 }
 
 resource "incapsula_ai_application_security_policy" "test" {
-  account_id     = %d
   application_id = incapsula_ai_application_security_application.policy_app.id
   name           = "%s"
 
@@ -384,20 +375,18 @@ resource "incapsula_ai_application_security_policy" "test" {
     config = "{\"nested\":{\"b\":2,\"a\":1},\"arr\":[3,1,2]}"
   }
 }
-`, aiApplicationSecurityTestAccountID(), aiApplicationSecurityTestAccountID(), name)
+`, name)
 }
 
 func testAccAiApplicationSecurityPolicyInvalidPhaseConfig(name string) string {
 	return fmt.Sprintf(`
 resource "incapsula_ai_application_security_application" "policy_app" {
-  account_id       = %d
   name             = "policy-app"
   application_type = "API"
   region           = "US"
 }
 
 resource "incapsula_ai_application_security_policy" "test" {
-  account_id     = %d
   application_id = incapsula_ai_application_security_application.policy_app.id
   name           = "%s"
 
@@ -407,7 +396,7 @@ resource "incapsula_ai_application_security_policy" "test" {
     mode  = "BLOCK"
   }
 }
-`, aiApplicationSecurityTestAccountID(), aiApplicationSecurityTestAccountID(), name)
+`, name)
 }
 
 // aiApplicationSecurityPolicyImportID resolves the import key (policy UUID) for the named resource
@@ -434,7 +423,8 @@ func testAccCheckAiApplicationSecurityPolicyExists(name string) resource.TestChe
 
 		client := testAccProvider.Meta().(*Client)
 
-		policy, err := client.GetAiApplicationSecurityPolicy(aiApplicationSecurityTestAccountID(), rs.Primary.Attributes["application_id"], rs.Primary.ID)
+		accountID, _ := strconv.Atoi(rs.Primary.Attributes["account_id"])
+		policy, err := client.GetAiApplicationSecurityPolicy(accountID, rs.Primary.Attributes["application_id"], rs.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("Error getting AI Application Security policy: %s", err)
 		}
@@ -457,7 +447,8 @@ func testAccCheckAiApplicationSecurityPolicyDestroy(s *terraform.State) error {
 			continue
 		}
 
-		policy, err := client.GetAiApplicationSecurityPolicy(aiApplicationSecurityTestAccountID(), rs.Primary.Attributes["application_id"], rs.Primary.ID)
+		accountID, _ := strconv.Atoi(rs.Primary.Attributes["account_id"])
+		policy, err := client.GetAiApplicationSecurityPolicy(accountID, rs.Primary.Attributes["application_id"], rs.Primary.ID)
 		if err == nil && policy != nil {
 			return fmt.Errorf("AI Application Security policy still exists: %s", rs.Primary.ID)
 		}
